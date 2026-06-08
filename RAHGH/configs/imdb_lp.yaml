@@ -1,0 +1,13 @@
+dataset: imdb
+task: lp
+d: [64, 128, 256]
+gcn_hidden: [64, 128]
+dropout: [0.3, 0.5]
+lr: [0.001, 0.005]
+wd: [1e-4, 1e-3]
+K: [2, 3, 4, 5, 6]
+epochs: [100, 300, 500, 700]
+neg_ratio: 5
+cv_folds: 5
+test_frac: 0.20
+n_seeds: 10

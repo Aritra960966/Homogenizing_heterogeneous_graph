@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Virtual environment
+graph_cu/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS junk
+__MACOSX/
+.DS_Store
+Thumbs.db
+
+# Raw downloaded archives
+drive-download-*/
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# Results
+results/
