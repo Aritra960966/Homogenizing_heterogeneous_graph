@@ -1,4 +1,8 @@
-import numpy as np, torch, torch.nn as nn, torch.nn.functional as F, time, os, csv
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import time, os, csv
 from torch.optim import Adam
 from sklearn.cluster  import KMeans
 from sklearn.metrics  import normalized_mutual_info_score, adjusted_rand_score
@@ -28,7 +32,7 @@ class ReconDecoder(nn.Module):
 
 
 def run_final_clustering(data, best_params, tr80_idx, te20_idx,
-                         seed=42, out_dir='results/clustering'):
+                          seed=42, out_dir='results/clustering'):
     torch.manual_seed(seed); np.random.seed(seed)
     device  = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     d       = best_params['d']
@@ -98,12 +102,17 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
         acc    = clustering_accuracy(y, pred)
 
     os.makedirs(os.path.join(out_dir, 'epoch_logs'), exist_ok=True)
-    if epoch_rows:
-        with open(os.path.join(out_dir, 'epoch_logs', f'seed{seed}_epochs.csv'), 'w', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=epoch_rows[0].keys())
-            w.writeheader(); w.writerows(epoch_rows)
+    _write_csv(epoch_rows,
+               os.path.join(out_dir, 'epoch_logs', f'seed{seed}_epochs.csv'))
 
     return dict(nmi=nmi, ari=ari, acc=acc,
                 alpha=alpha.detach().cpu().numpy(),
                 beta=beta.detach().cpu().numpy(),
                 time_sec=time.time()-t0)
+
+
+def _write_csv(rows, path):
+    if not rows: return
+    with open(path, 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=rows[0].keys())
+        w.writeheader(); w.writerows(rows)

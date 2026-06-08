@@ -56,6 +56,12 @@ class RAHGH(nn.Module):
         gcn_out = self._forward_gcn(Z_final)
         return gcn_out, alpha, beta, gcn_out
 
+    def encode(self, X_list, P_list):
+        H0     = self.projector(X_list)
+        Z, alpha, beta = self.diffusion(H0, P_list)
+        Z_final = self.fusion(torch.cat([H0, Z], dim=1))
+        return Z_final, alpha, beta, Z_final
+
     @torch._dynamo.disable
     def _forward_gcn(self, Z_final):
         alpha = F.softmax(self.diffusion.theta, dim=0)
@@ -74,7 +80,7 @@ def compile_model(
     if backend is None:
         backend = "aot_eager" if sys.platform == "win32" else "inductor"
     if verbose:
-        print(f"[compile_model] backend='{backend}'")
+        print(f"[compile_model] ")
     try:
         return torch.compile(model, backend=backend, fullgraph=False)
     except Exception as exc:

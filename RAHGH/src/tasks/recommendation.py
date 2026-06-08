@@ -1,8 +1,11 @@
-import numpy as np, torch, torch.nn as nn, torch.nn.functional as F
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import time, os, csv
 from torch.optim import Adam
 
-from ..model.rahgh    import RAHGH
+from ..model.rahgh import RAHGH
 from ..model.diffusion import build_operators
 
 
@@ -50,7 +53,7 @@ def compute_rec_metrics(emb, test_edges, user_train_pos, all_items, K_list, devi
             hits     = [1 if i in pos_set else 0 for i in recs]
             n_hits   = sum(hits)
 
-            results[K]['recall'].append(n_hits / len(pos_set))
+            results[K]['recall'].append(n_hits / len(pos_set) if pos_set else 0.0)
 
             dcg  = sum(h / np.log2(r+2) for r, h in enumerate(hits))
             idcg = sum(1.0 / np.log2(r+2) for r in range(min(len(pos_set), K)))
@@ -72,15 +75,16 @@ def compute_rec_metrics(emb, test_edges, user_train_pos, all_items, K_list, devi
 
 
 def sample_bpr_negatives(users, all_items, user_pos, rng, n=None):
-    n       = n or len(users)
-    neg     = rng.choice(all_items, size=n*3)
-    out     = []
-    ni      = 0
+    n   = n or len(users)
+    neg = rng.choice(all_items, size=n*3)
+    out = []
+    ni  = 0
     for u in users:
         pos_set = user_pos.get(u, set())
         while neg[ni] in pos_set:
             ni += 1
-            if ni >= len(neg): neg = rng.choice(all_items, size=n*3); ni = 0
+            if ni >= len(neg):
+                neg = rng.choice(all_items, size=n*3); ni = 0
         out.append(neg[ni]); ni += 1
     return np.array(out)
 
@@ -137,9 +141,9 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
             backbone.eval()
             with torch.no_grad():
                 emb_v, *_ = backbone(X_list, P_list)
-                agg = compute_rec_metrics(emb_v, te20_edges, user_pos, all_items,
-                                          [best_params.get('K_rec', 20)], device)
-                rec = agg.get(f'recall@{best_params.get("K_rec", 20)}', 0.0)
+                agg = compute_rec_metrics(emb_v, te20_edges, user_pos,
+                                           all_items, [20], device)
+                rec = agg.get('recall@20', 0.0)
             if rec > best_rec:
                 best_rec = rec
                 best_sd  = {k: v.clone() for k, v in backbone.state_dict().items()}
@@ -151,10 +155,8 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
                                          all_items, K_list, device)
 
     os.makedirs(os.path.join(out_dir, 'epoch_logs'), exist_ok=True)
-    if epoch_rows:
-        with open(os.path.join(out_dir, 'epoch_logs', f'seed{seed}_epochs.csv'), 'w', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=epoch_rows[0].keys())
-            w.writeheader(); w.writerows(epoch_rows)
+    _write_csv(epoch_rows,
+               os.path.join(out_dir, 'epoch_logs', f'seed{seed}_epochs.csv'))
 
     return dict(**final_agg,
                 alpha=alpha.detach().cpu().numpy(),
@@ -165,3 +167,10 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
 def recall_at_k(emb, test_edges, user_train_pos, all_items, K, device):
     agg = compute_rec_metrics(emb, test_edges, user_train_pos, all_items, [K], device)
     return agg.get(f'recall@{K}', 0.0)
+
+
+def _write_csv(rows, path):
+    if not rows: return
+    with open(path, 'w', newline='') as f:
+        w = csv.DictWriter(f, fieldnames=rows[0].keys())
+        w.writeheader(); w.writerows(rows)
