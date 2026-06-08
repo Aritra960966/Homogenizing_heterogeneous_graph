@@ -8,7 +8,7 @@ import scipy.sparse as sp
 import time
 from tqdm import tqdm
 
-from ..model.rahgh    import RAHGH
+from ..model.rahgh    import RAHGH, compile_model
 from ..model.diffusion import build_operators, normalize_plain
 
 
@@ -60,6 +60,9 @@ def _build_masked_operators(data, train_edges, device):
     return build_operators(A_list_masked, data['bipartite_flags'], device)
 
 
+PATIENCE = 100
+
+
 def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
                  device, neg_ratio=5):
     torch.manual_seed(0)
@@ -78,9 +81,12 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
         dropout=params['dropout'],
         A_list_sp=data['A_list_sp'], N=data['N'], device=device,
     ).to(device)
+    backbone = compile_model(backbone, verbose=True)
     decoder = MLPDecoder(d).to(device)
+
     opt = Adam(list(backbone.parameters()) + list(decoder.parameters()),
                lr=params['lr'], weight_decay=params['wd'])
+    scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     all_src = np.unique(tr_edges[:, 0])
     all_dst = np.unique(tr_edges[:, 1])
@@ -100,28 +106,42 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
     tr_s, tr_d, tr_l = tensors(tr_edges, tr_neg)
     va_s, va_d, va_l = tensors(va_edges, va_neg)
 
-    best_auc = 0.0
-    pbar = tqdm(range(1, params['epochs'] + 1), desc="LP fold training", leave=False)
+    best_auc, stall = 0.0, 0
+    max_epochs = params['epochs']
+    pbar = tqdm(range(1, max_epochs + 1), desc="LP fold training", leave=False)
     for ep in pbar:
         backbone.train()
         decoder.train()
         opt.zero_grad()
-        emb, *_ = backbone(X_list, P_list)
-        loss = F.binary_cross_entropy_with_logits(
-            decoder(emb, tr_s, tr_d), tr_l)
-        loss.backward()
-        opt.step()
+        with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
+            emb, *_ = backbone(X_list, P_list)
+            loss = F.binary_cross_entropy_with_logits(
+                decoder(emb, tr_s, tr_d), tr_l)
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(opt)
+            scaler.update()
+        else:
+            loss.backward()
+            opt.step()
 
-        if ep % 50 == 0 or ep == params['epochs']:
-            backbone.eval()
-            decoder.eval()
-            with torch.no_grad():
-                emb_v, *_ = backbone(X_list, P_list)
-                p = torch.sigmoid(decoder(emb_v, va_s, va_d)).cpu().numpy()
-                auc = roc_auc_score(va_l.cpu().numpy(), p)
-            pbar.set_description(f"loss={loss.item():.4f} val_auc={auc:.4f}")
-            if auc > best_auc:
-                best_auc = auc
+        backbone.eval()
+        decoder.eval()
+        with torch.no_grad():
+            emb_v, *_ = backbone(X_list, P_list)
+            p = torch.sigmoid(decoder(emb_v, va_s, va_d)).cpu().numpy()
+            auc = roc_auc_score(va_l.cpu().numpy(), p)
+
+        pbar.set_description(f"loss={loss.item():.4f} val_auc={auc:.4f}")
+
+        if auc > best_auc:
+            best_auc = auc
+            stall = 0
+        else:
+            stall += 1
+            if stall >= PATIENCE:
+                pbar.set_description(f"Early stop @{ep}/{max_epochs} best={best_auc:.4f}")
+                break
 
     del backbone, decoder
     torch.cuda.empty_cache()
@@ -147,11 +167,13 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
         dropout=cfg['dropout'],
         A_list_sp=data['A_list_sp'], N=data['N'], device=device,
     ).to(device)
+    backbone = compile_model(backbone, verbose=True)
 
     decoder   = MLPDecoder(d).to(device)
     optimizer = Adam(
         list(backbone.parameters()) + list(decoder.parameters()),
         lr=cfg['lr'], weight_decay=cfg['wd'])
+    scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     tr_e, va_e, te_e = split_edges(target_edges, seed=seed)
     all_src = np.unique(target_edges[:, 0])
@@ -188,11 +210,17 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
         backbone.train()
         decoder.train()
         optimizer.zero_grad()
-        emb, *_ = backbone(X_list, P_list)
-        loss = F.binary_cross_entropy_with_logits(
-            decoder(emb, tr_s, tr_d), tr_l)
-        loss.backward()
-        optimizer.step()
+        with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
+            emb, *_ = backbone(X_list, P_list)
+            loss = F.binary_cross_entropy_with_logits(
+                decoder(emb, tr_s, tr_d), tr_l)
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            optimizer.step()
 
         backbone.eval()
         decoder.eval()
@@ -220,7 +248,7 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
 
 
 def run_final_lp(data, best_params, tr80_edges, te20_edges,
-                 seed=42, neg_ratio=5):
+                 seed=42, neg_ratio=5, out_dir=None):
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -238,9 +266,11 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
         dropout=best_params['dropout'],
         A_list_sp=data['A_list_sp'], N=data['N'], device=device,
     ).to(device)
+    backbone = compile_model(backbone, verbose=True)
     decoder = MLPDecoder(d).to(device)
     opt = Adam(list(backbone.parameters()) + list(decoder.parameters()),
                lr=best_params['lr'], weight_decay=best_params['wd'])
+    scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     all_src = np.unique(tr80_edges[:, 0])
     all_dst = np.unique(tr80_edges[:, 1])
@@ -263,27 +293,38 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
     best_sd_b, best_sd_d, best_auc = None, None, 0.0
     t0 = time.time()
 
+    epoch_rows = []
     pbar = tqdm(range(1, best_params['epochs'] + 1), desc="Final LP training")
     for ep in pbar:
         backbone.train()
         decoder.train()
         opt.zero_grad()
-        emb, *_ = backbone(X_list, P_list)
-        loss = F.binary_cross_entropy_with_logits(
-            decoder(emb, tr_s, tr_d), tr_l)
-        loss.backward()
-        opt.step()
+        with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
+            emb, *_ = backbone(X_list, P_list)
+            loss = F.binary_cross_entropy_with_logits(
+                decoder(emb, tr_s, tr_d), tr_l)
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(opt)
+            scaler.update()
+        else:
+            loss.backward()
+            opt.step()
+
+        # Track training AUC every epoch
+        backbone.eval()
+        decoder.eval()
+        with torch.no_grad():
+            emb_v, a, b, _ = backbone(X_list, P_list)
+            pv = torch.sigmoid(decoder(emb_v, tr_s, tr_d)).cpu().numpy()
+            train_auc = roc_auc_score(tr_l.cpu().numpy(), pv)
+        epoch_rows.append({'epoch': ep, 'loss': loss.item(),
+                           'train_auc': float(train_auc)})
 
         if ep % 50 == 0 or ep == best_params['epochs']:
-            backbone.eval()
-            decoder.eval()
-            with torch.no_grad():
-                emb_v, a, b, _ = backbone(X_list, P_list)
-                pv = torch.sigmoid(decoder(emb_v, tr_s, tr_d)).cpu().numpy()
-                av = roc_auc_score(tr_l.cpu().numpy(), pv)
-            pbar.set_description(f"loss={loss.item():.4f} train_auc={av:.4f}")
-            if av > best_auc:
-                best_auc  = av
+            pbar.set_description(f"loss={loss.item():.4f} train_auc={train_auc:.4f}")
+            if train_auc > best_auc:
+                best_auc  = train_auc
                 best_sd_b = {k: v.clone()
                              for k, v in backbone.state_dict().items()}
                 best_sd_d = {k: v.clone()
@@ -298,6 +339,16 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
         p = torch.sigmoid(decoder(emb_te, te_s, te_d)).cpu().numpy()
         auc = roc_auc_score(te_l.cpu().numpy(), p)
         ap  = average_precision_score(te_l.cpu().numpy(), p)
+
+    # Save epoch metrics
+    if out_dir is not None:
+        import csv
+        from pathlib import Path
+        ep_path = Path(out_dir) / f'epoch_metrics_seed{seed}.csv'
+        with open(ep_path, 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=['epoch', 'loss', 'train_auc'])
+            w.writeheader()
+            w.writerows(epoch_rows)
 
     return dict(auc=auc, ap=ap,
                 alpha=alpha.detach().cpu().numpy(),
