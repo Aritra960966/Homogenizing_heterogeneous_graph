@@ -1,0 +1,15 @@
+dataset: imdb
+task: cl
+d: 64
+gcn_hidden: 64
+dropout: 0.5
+lr: 0.001
+wd: 0.0001
+K: 3
+epochs: 300
+cl_loss: reconstruction
+cl_temp: 0.1
+cv_folds: 5
+test_frac: 0.20
+n_iter: 50
+n_seeds: 10
