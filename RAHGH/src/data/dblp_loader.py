@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import scipy.sparse as sp
 import torch
@@ -7,6 +8,9 @@ from nltk.stem import WordNetLemmatizer
 from nltk import word_tokenize
 from nltk.corpus import stopwords as nltk_sw
 import pandas as pd
+
+warnings.filterwarnings('ignore', category=UserWarning,
+                        module='sklearn.feature_extraction.text')
 
 
 class LemmaTokenizer:

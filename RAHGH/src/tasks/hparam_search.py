@@ -1,9 +1,19 @@
 import itertools, random, time, json, os
 import numpy as np, torch
 from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
+import csv
+import json
+import itertools
+import random
+import time
+import numpy as np
+import torch
+import torch.nn.functional as F
+from pathlib import Path
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
 
-from ..model.rahgh    import RAHGH
+from ..model.rahgh    import RAHGH, compile_model
 from ..model.diffusion import build_operators
 import torch.nn.functional as F
 from torch.optim import Adam
@@ -12,9 +22,15 @@ from torch.optim import Adam
 PARAM_GRID_BASE = {
     'd'         : [64, 128],
     'K'         : [2, 3, 4, 5, 6],
+PARAM_GRID = {
+    'd'         : [32, 64],
+    'K'         : [2, 3],
     'dropout'   : [0.3, 0.5],
     'lr'        : [0.001, 0.005],
     'wd'        : [1e-4, 1e-3],
+    'gcn_hidden': [64, 128],
+    'epochs'    : [300, 500],
+    'wd'        : [0.0, 0.001],
     'gcn_hidden': [64, 128],
     'epochs'    : [300, 500],
 }
@@ -34,7 +50,10 @@ PARAM_GRID_REC = {
 
 N_ITER    = 50
 N_FOLDS   = 5
+N_FOLDS   = 5    # fewer folds during search for speed
 TEST_FRAC = 0.20
+PATIENCE  = 50      # early stopping: stop if val metric flat for this many epochs
+RANDOM_SEARCH_SIZE = 100   # 0 = full grid; set to N to sample N random combos
 
 
 def _random_combos(grid, seed=0, n=N_ITER):
@@ -63,6 +82,13 @@ def _write_csv(rows, path):
         w = csv.DictWriter(f, fieldnames=rows[0].keys())
         w.writeheader(); w.writerows(rows)
     print(f"  Saved -> {path}")
+def _all_combos():
+    keys = list(PARAM_GRID.keys())
+    combos = list(itertools.product(*PARAM_GRID.values()))
+    if RANDOM_SEARCH_SIZE > 0 and RANDOM_SEARCH_SIZE < len(combos):
+        combos = random.sample(combos, RANDOM_SEARCH_SIZE)
+    for vals in combos:
+        yield dict(zip(keys, vals))
 
 
 def _run_fold_nc(data, P_list, X_list, params, tr_idx, va_idx, device):
@@ -79,7 +105,10 @@ def _run_fold_nc(data, P_list, X_list, params, tr_idx, va_idx, device):
         dropout=params['dropout'],
         A_list_sp=data['A_list_sp'], N=data['N'], device=device,
     ).to(device)
+    model = compile_model(model, verbose=True)
+
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
+    scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     tr_t = torch.tensor(tr_idx, dtype=torch.long, device=device)
     va_t = torch.tensor(va_idx, dtype=torch.long, device=device)
@@ -90,6 +119,23 @@ def _run_fold_nc(data, P_list, X_list, params, tr_idx, va_idx, device):
         logits, *_ = model(X_list, P_list)
         F.cross_entropy(logits[:Nt][tr_t], labels[tr_t]).backward()
         opt.step()
+    best_vm, best_sd, stall = 0.0, None, 0
+    max_epochs = params['epochs']
+
+    pbar = tqdm(range(1, max_epochs + 1), desc="Fold training", leave=False)
+    for ep in pbar:
+        model.train()
+        opt.zero_grad()
+        with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
+            logits, *_ = model(X_list, P_list)
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t])
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(opt)
+            scaler.update()
+        else:
+            loss.backward()
+            opt.step()
 
         if ep % 50 == 0 or ep == params['epochs']:
             model.eval()
@@ -101,6 +147,24 @@ def _run_fold_nc(data, P_list, X_list, params, tr_idx, va_idx, device):
             if vm > best_vm:
                 best_vm = vm
                 best_sd = {k: v.clone() for k, v in model.state_dict().items()}
+        model.eval()
+        with torch.no_grad():
+            logits, *_ = model(X_list, P_list)
+            p = logits[:Nt][va_t].argmax(1).cpu().numpy()
+            y = data['labels'][va_idx].numpy()
+            vm = f1_score(y, p, average='macro', zero_division=0)
+
+        pbar.set_description(f"val_macro={vm:.4f}")
+
+        if vm > best_vm:
+            best_vm = vm
+            best_sd = {k: v.clone() for k, v in model.state_dict().items()}
+            stall = 0
+        else:
+            stall += 1
+            if stall >= PATIENCE:
+                pbar.set_description(f"Early stop @{ep}/{max_epochs} best={best_vm:.4f}")
+                break
 
     del model; torch.cuda.empty_cache()
     return best_vm
@@ -208,6 +272,7 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, K_rec=20):
 
 
 def hparam_search_nc(data, seed=42, out_dir='results/nc'):
+def hparam_search_nc(data, seed=42, out_dir=None):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     Nt     = data['target_size']
     lbl_np = data['labels'].numpy()
@@ -223,6 +288,10 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc'):
     os.makedirs(out_dir, exist_ok=True)
     cv_rows  = []
     best_params, best_mean = None, 0.0
+    skf      = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=seed)
+    combos   = list(_all_combos())
+    best_params, best_mean = None, -1.0
+    all_fold_scores = []  # all_fold_scores[combo_idx][fold_idx] = score
 
     for ci, params in enumerate(combos):
         fold_scores = []
@@ -232,6 +301,8 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc'):
             fold_scores.append(vm)
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_macro': round(vm, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
+        all_fold_scores.append(fold_scores)
+
         mean_vm = float(np.mean(fold_scores))
         if mean_vm > best_mean: best_mean, best_params = mean_vm, params
 
@@ -239,6 +310,15 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc'):
     _save_best_params(best_params, data.get('name',''), 'nc', out_dir)
     print(f"[NC hparam] best_val_macro={best_mean:.4f}  params={best_params}")
     return best_params, tr80, te20
+    # Build cv_scores rows
+    cv_rows = []
+    for ci, params in enumerate(combos):
+        for fi, vm in enumerate(all_fold_scores[ci]):
+            row = {'combo': ci, 'fold': fi, 'score': vm}
+            row.update({f'hp_{k}': v for k, v in params.items()})
+            cv_rows.append(row)
+
+    return best_params, tr80, te20, cv_rows, combos
 
 
 def hparam_search_cl(data, seed=42, out_dir='results/clustering'):
@@ -276,6 +356,9 @@ def hparam_search_cl(data, seed=42, out_dir='results/clustering'):
 
 
 def hparam_search_rec(data, target_edges, seed=42, out_dir='results/recommendation'):
+def hparam_search_lp(data, target_edges, seed=42, out_dir=None):
+    from .link_prediction import _run_fold_lp
+
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     all_idx    = np.arange(len(target_edges))
@@ -322,6 +405,12 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp'):
     os.makedirs(out_dir, exist_ok=True)
     cv_rows  = []
     best_params, best_mean = None, 0.0
+    combos     = list(_all_combos())
+    best_params, best_mean = None, -1.0
+    kf         = StratifiedKFold(n_splits=N_FOLDS, shuffle=True,
+                                 random_state=seed)
+    dummy_labels = np.zeros(len(tr80_edges), dtype=int)
+    all_fold_scores = []
 
     for ci, params in enumerate(combos):
         fold_aucs = []
@@ -331,6 +420,8 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp'):
             fold_aucs.append(auc)
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_auc': round(auc, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
+        all_fold_scores.append(fold_aucs)
+
         mean_auc = float(np.mean(fold_aucs))
         if mean_auc > best_mean: best_mean, best_params = mean_auc, params
 
@@ -338,3 +429,11 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp'):
     _save_best_params(best_params, data.get('name',''), 'lp', out_dir)
     print(f"[LP hparam] best_val_auc={best_mean:.4f}  params={best_params}")
     return best_params, tr80_edges, te20_edges
+    cv_rows = []
+    for ci, params in enumerate(combos):
+        for fi, auc in enumerate(all_fold_scores[ci]):
+            row = {'combo': ci, 'fold': fi, 'score': auc}
+            row.update({f'hp_{k}': v for k, v in params.items()})
+            cv_rows.append(row)
+
+    return best_params, tr80_edges, te20_edges, cv_rows, combos

@@ -5,6 +5,24 @@ import numpy as np
 import scipy.sparse as sp
 
 
+@torch._dynamo.disable
+def apply_corrected_propagation(
+    H: torch.Tensor,
+    P_r: torch.Tensor,
+    bipartite: bool = False,
+) -> torch.Tensor:
+    orig_dtype = H.dtype
+    device_type = "cuda" if H.is_cuda else "cpu"
+    with torch.amp.autocast(device_type=device_type, enabled=False):
+        H_f32 = H.to(dtype=torch.float32)
+        if bipartite:
+            V = torch.sparse.mm(P_r.t(), H_f32)
+            out = torch.sparse.mm(P_r, V)
+        else:
+            out = torch.sparse.mm(P_r, H_f32)
+    return out.to(dtype=orig_dtype)
+
+
 def normalize_with_selfloops(A_sp, device):
     N       = A_sp.shape[0]
     A_t     = (A_sp + sp.eye(N, format='csr', dtype=np.float32)).tocoo()
@@ -65,7 +83,7 @@ class RelationSpecificDiffusion(nn.Module):
             for k in range(self.K + 1):
                 Zr = Zr + beta[r, k] * Hk
                 if k < self.K:
-                    Hk = P_list[r] @ Hk
+                    Hk = apply_corrected_propagation(Hk, P_list[r], bipartite=False)
             Z_list.append(Zr)
         Z = sum(alpha[r] * Z_list[r] for r in range(self.R))
         return Z, alpha, beta

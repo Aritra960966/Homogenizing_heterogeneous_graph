@@ -6,7 +6,7 @@ for DATASET in dblp acm imdb; do
     echo "=============================="
     python -m src.train \
         --dataset $DATASET --task nc \
-        --out results/logs/${DATASET}_nc.csv \
+        --out-dir results \
         --seeds 10
 done
 echo "All NC runs complete."
