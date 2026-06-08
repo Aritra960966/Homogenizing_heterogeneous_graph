@@ -1,16 +1,16 @@
 import csv, os, json, argparse
 import numpy as np
 
-from data.dblp_loader import load_dblp
-from data.acm_loader  import load_acm
-from data.imdb_loader import load_imdb
+from .data.dblp_loader import load_dblp
+from .data.acm_loader  import load_acm
+from .data.imdb_loader import load_imdb
 
-from tasks.hparam_search       import (hparam_search_nc, hparam_search_lp,
-                                        hparam_search_cl, hparam_search_rec)
-from tasks.node_classification import run_final_nc
-from tasks.link_prediction     import run_final_lp
-from tasks.graph_clustering    import run_final_clustering
-from tasks.recommendation      import run_final_recommendation
+from .tasks.hparam_search       import (hparam_search_nc, hparam_search_lp,
+                                         hparam_search_cl, hparam_search_rec)
+from .tasks.node_classification import run_final_nc
+from .tasks.link_prediction     import run_final_lp
+from .tasks.graph_clustering    import run_final_clustering
+from .tasks.recommendation      import run_final_recommendation
 
 LOADERS  = {'dblp': load_dblp, 'acm': load_acm, 'imdb': load_imdb}
 N_SEEDS  = 10

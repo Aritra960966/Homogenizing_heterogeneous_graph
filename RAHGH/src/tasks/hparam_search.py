@@ -359,7 +359,7 @@ def hparam_search_nc(
     P_list = build_operators(data['A_list_sp'], data['bipartite_flags'], device)
     X_list = [x.to(device) for x in data['X_dict'].values()]
 
-    combos = _all_combos(PARAM_GRID_BASE)           # 128 combos — full sweep
+    combos = _random_combos(PARAM_GRID_BASE, n=N_RANDOM, seed=seed)
     skf    = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=seed)
 
     cv_rows, best_params, best_mean = [], None, -1.0
@@ -376,9 +376,10 @@ def hparam_search_nc(
                 'combo': ci, 'fold': fold, 'val_macro_f1': round(vm, 4),
                 **{f'hp_{k}': v for k, v in params.items()},
             })
+            print(f"  [NC] combo {ci+1}/{len(combos)}  fold {fold+1}  val_macro={vm:.4f}")
 
         mean_vm = float(np.mean(scores))
-        print(f"[NC] combo {ci+1:3d}/{len(combos)}  mean_macro_f1={mean_vm:.4f}  {params}")
+        print(f"  [NC] combo {ci+1}/{len(combos)}  mean_macro_f1={mean_vm:.4f}  {params}")
         if mean_vm > best_mean:
             best_mean, best_params = mean_vm, params
 
@@ -523,7 +524,7 @@ def hparam_search_lp(
     tr80_edges         = target_edges[tr80_idx]
     te20_edges         = target_edges[te20_idx]
 
-    combos = _all_combos(PARAM_GRID_BASE)           # 128 combos — full sweep
+    combos = _random_combos(PARAM_GRID_BASE, n=N_RANDOM, seed=seed)
     kf     = KFold(n_splits=N_FOLDS, shuffle=True, random_state=seed)
 
     cv_rows, best_params, best_mean = [], None, -1.0
@@ -540,9 +541,10 @@ def hparam_search_lp(
                 'combo': ci, 'fold': fold, 'val_auc': round(auc, 4),
                 **{f'hp_{k}': v for k, v in params.items()},
             })
+            print(f"  [LP] combo {ci+1}/{len(combos)}  fold {fold+1}  val_auc={auc:.4f}")
 
         mean_auc = float(np.mean(scores))
-        print(f"[LP] combo {ci+1:3d}/{len(combos)}  mean_auc={mean_auc:.4f}  {params}")
+        print(f"  [LP] combo {ci+1}/{len(combos)}  mean_auc={mean_auc:.4f}  {params}")
         if mean_auc > best_mean:
             best_mean, best_params = mean_auc, params
 
