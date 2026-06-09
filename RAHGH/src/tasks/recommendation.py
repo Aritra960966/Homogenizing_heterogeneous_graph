@@ -5,8 +5,10 @@ import torch.nn.functional as F
 import time, os, csv
 from torch.optim import Adam
 
-from ..model.rahgh import RAHGH
-from ..model.diffusion import build_operators
+from ..model.rahgh import (
+    RAHGHClassifier, build_rahgh_classifier, build_edge_index_dict,
+    build_node_type_indices,
+)
 
 
 def bpr_loss(emb, users, pos_items, neg_items, device, reg=1e-4):
@@ -93,24 +95,23 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
                               target_relation_idx=0,
                               K_list=(10, 20, 50),
                               seed=42,
-                              out_dir='results/recommendation'):
+                              out_dir='results/recommendation',
+                              head='gcn'):
     torch.manual_seed(seed); np.random.seed(seed)
     device  = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     d       = best_params['d']
-    R       = len(data['A_list_sp'])
-    in_dims = [x.shape[1] for x in data['X_dict'].values()]
-    X_list  = [x.to(device) for x in data['X_dict'].values()]
     K_list  = list(K_list)
 
-    P_list  = build_operators(data['A_list_sp'], data['bipartite_flags'], device)
+    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
+    edge_index_dict = build_edge_index_dict(data, device)
+    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    backbone = RAHGH(
-        in_dims=in_dims, d=d, R=R, K=best_params['K'],
-        gcn_hidden=best_params['gcn_hidden'],
-        out_dim=d, dropout=best_params['dropout'],
-        A_list_sp=data['A_list_sp'], N=data['N'], device=device,
+    model = build_rahgh_classifier(
+        data, hidden_dim=d, num_classes=d, K=best_params['K'],
+        head=head,
+        dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
     ).to(device)
-    opt = Adam(backbone.parameters(), lr=best_params['lr'],
+    opt = Adam(model.parameters(), lr=best_params['lr'],
                weight_decay=best_params['wd'])
 
     all_items  = np.unique(tr80_edges[:, 1])
@@ -124,8 +125,8 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
     t0         = time.time()
 
     for ep in range(1, best_params['epochs'] + 1):
-        backbone.train(); opt.zero_grad()
-        emb, *_ = backbone(X_list, P_list)
+        model.train(); opt.zero_grad()
+        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
 
         users     = tr80_edges[:, 0]
         pos_items = tr80_edges[:, 1]
@@ -138,21 +139,28 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
         epoch_rows.append({'epoch': ep, 'bpr_loss': round(loss.item(), 6)})
 
         if ep % 50 == 0 or ep == best_params['epochs']:
-            backbone.eval()
+            model.eval()
             with torch.no_grad():
-                emb_v, *_ = backbone(X_list, P_list)
+                emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
                 agg = compute_rec_metrics(emb_v, te20_edges, user_pos,
                                            all_items, [20], device)
                 rec = agg.get('recall@20', 0.0)
             if rec > best_rec:
                 best_rec = rec
-                best_sd  = {k: v.clone() for k, v in backbone.state_dict().items()}
+                best_sd  = {k: v.clone() for k, v in model.state_dict().items()}
 
-    backbone.load_state_dict(best_sd); backbone.eval()
+    model.load_state_dict(best_sd); model.eval()
     with torch.no_grad():
-        emb_f, alpha, beta, _ = backbone(X_list, P_list)
+        emb_f, alpha = model(x_dict, edge_index_dict, node_type_indices)
         final_agg = compute_rec_metrics(emb_f, te20_edges, user_pos,
                                          all_items, K_list, device)
+
+    # Save final model
+    if out_dir is not None:
+        os.makedirs(out_dir, exist_ok=True)
+        pt_path = os.path.join(out_dir, f'final_model_seed{seed}.pt')
+        torch.save(model.state_dict(), pt_path)
+        print(f"  Model saved → {pt_path}")
 
     os.makedirs(os.path.join(out_dir, 'epoch_logs'), exist_ok=True)
     _write_csv(epoch_rows,
@@ -160,7 +168,6 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
 
     return dict(**final_agg,
                 alpha=alpha.detach().cpu().numpy(),
-                beta=beta.detach().cpu().numpy(),
                 time_sec=time.time()-t0)
 
 

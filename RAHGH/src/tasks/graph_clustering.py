@@ -8,8 +8,10 @@ from sklearn.cluster  import KMeans
 from sklearn.metrics  import normalized_mutual_info_score, adjusted_rand_score
 from scipy.optimize   import linear_sum_assignment
 
-from ..model.rahgh    import RAHGH
-from ..model.diffusion import build_operators
+from ..model.rahgh import (
+    RAHGHClassifier, build_rahgh_classifier, build_edge_index_dict,
+    build_node_type_indices,
+)
 
 
 def clustering_accuracy(y_true, y_pred):
@@ -32,23 +34,22 @@ class ReconDecoder(nn.Module):
 
 
 def run_final_clustering(data, best_params, tr80_idx, te20_idx,
-                          seed=42, out_dir='results/clustering'):
+                          seed=42, out_dir='results/clustering',
+                          head='gcn'):
     torch.manual_seed(seed); np.random.seed(seed)
     device  = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     d       = best_params['d']
-    R       = len(data['A_list_sp'])
     Nt      = data['target_size']
-    in_dims = [x.shape[1] for x in data['X_dict'].values()]
     n_cl    = data['n_classes']
 
-    P_list  = build_operators(data['A_list_sp'], data['bipartite_flags'], device)
-    X_list  = [x.to(device) for x in data['X_dict'].values()]
+    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
+    edge_index_dict = build_edge_index_dict(data, device)
+    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    model   = RAHGH(
-        in_dims=in_dims, d=d, R=R, K=best_params['K'],
-        gcn_hidden=best_params['gcn_hidden'],
-        out_dim=d, dropout=best_params['dropout'],
-        A_list_sp=data['A_list_sp'], N=data['N'], device=device,
+    model = build_rahgh_classifier(
+        data, hidden_dim=d, num_classes=d, K=best_params['K'],
+        head=head,
+        dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
     ).to(device)
 
     d_feat  = data['X_dict'][list(data['X_dict'].keys())[0]].shape[1]
@@ -64,10 +65,10 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
 
     for ep in range(1, best_params['epochs'] + 1):
         model.train(); decoder.train(); opt.zero_grad()
-        emb, *_ = model(X_list, P_list)
+        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
 
         recon   = decoder(emb[:Nt][tr_t])
-        X_tgt   = X_list[0][:Nt][tr_t]
+        X_tgt   = next(iter(x_dict.values()))[:Nt][tr_t]
         if X_tgt.shape[1] != recon.shape[1]:
             X_tgt = X_tgt[:, :recon.shape[1]]
         loss    = F.mse_loss(recon, X_tgt.detach())
@@ -78,7 +79,7 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
         if ep % 100 == 0 or ep == best_params['epochs']:
             model.eval()
             with torch.no_grad():
-                emb_v, *_ = model(X_list, P_list)
+                emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
                 emb_np    = emb_v[:Nt].cpu().numpy()
                 km        = KMeans(n_clusters=n_cl, n_init=10, random_state=0)
                 pred      = km.fit_predict(emb_np)
@@ -92,7 +93,7 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
 
     model.load_state_dict(best_sd); model.eval()
     with torch.no_grad():
-        emb_f, alpha, beta, _ = model(X_list, P_list)
+        emb_f, alpha = model(x_dict, edge_index_dict, node_type_indices)
         emb_np = emb_f[:Nt].cpu().numpy()
         km     = KMeans(n_clusters=n_cl, n_init=20, random_state=seed)
         pred   = km.fit_predict(emb_np)
@@ -101,13 +102,19 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
         ari    = adjusted_rand_score(y, pred)
         acc    = clustering_accuracy(y, pred)
 
+    # Save final model
+    if out_dir is not None:
+        os.makedirs(out_dir, exist_ok=True)
+        pt_path = os.path.join(out_dir, f'final_model_seed{seed}.pt')
+        torch.save(model.state_dict(), pt_path)
+        print(f"  Model saved → {pt_path}")
+
     os.makedirs(os.path.join(out_dir, 'epoch_logs'), exist_ok=True)
     _write_csv(epoch_rows,
                os.path.join(out_dir, 'epoch_logs', f'seed{seed}_epochs.csv'))
 
     return dict(nmi=nmi, ari=ari, acc=acc,
                 alpha=alpha.detach().cpu().numpy(),
-                beta=beta.detach().cpu().numpy(),
                 time_sec=time.time()-t0)
 
 

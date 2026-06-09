@@ -58,16 +58,18 @@ def _flatten_result(r):
     return out
 
 
-def run_nc(dataset_name, out_dir):
+def run_nc(dataset_name, out_dir, head='gcn'):
     data = LOADERS[dataset_name]()
     data['name'] = dataset_name
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Node Classification\n{'='*60}")
 
-    best_params, tr80, te20 = hparam_search_nc(data, seed=42, out_dir=out_dir)
+    best_params, tr80, te20 = hparam_search_nc(data, seed=42, out_dir=out_dir,
+                                                head=head)
 
     per_run_rows, macros, micros, accs = [], [], [], []
     for seed in range(N_SEEDS):
-        r = run_final_nc(data, best_params, tr80, te20, seed=seed)
+        r = run_final_nc(data, best_params, tr80, te20, seed=seed,
+                         out_dir=out_dir, head=head)
         macros.append(r['test_macro'])
         micros.append(r['test_micro'])
         accs.append(r['test_acc'])
@@ -101,7 +103,7 @@ def run_nc(dataset_name, out_dir):
     print(f"  Accuracy : {summary['accuracy_mean']:.4f} ± {summary['accuracy_sd']:.4f}")
 
 
-def run_lp(dataset_name, out_dir):
+def run_lp(dataset_name, out_dir, head='gcn'):
     import scipy.sparse as sp
     data   = LOADERS[dataset_name]()
     data['name'] = dataset_name
@@ -110,11 +112,12 @@ def run_lp(dataset_name, out_dir):
 
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Link Prediction\n{'='*60}")
     best_params, tr80_edges, te20_edges = hparam_search_lp(
-        data, target_edges, seed=42, out_dir=out_dir)
+        data, target_edges, seed=42, out_dir=out_dir, head=head)
 
     per_run_rows, aucs, aps = [], [], []
     for seed in range(N_SEEDS):
-        r = run_final_lp(data, best_params, tr80_edges, te20_edges, seed=seed)
+        r = run_final_lp(data, best_params, tr80_edges, te20_edges, seed=seed,
+                         out_dir=out_dir, head=head)
         aucs.append(r['auc']); aps.append(r['ap'])
         row = {'dataset': dataset_name, 'task': 'lp', 'seed': seed,
                'test_auc': round(r['auc'], 4),
@@ -141,17 +144,19 @@ def run_lp(dataset_name, out_dir):
     print(f"  AP  : {summary['ap_mean']:.4f} ± {summary['ap_sd']:.4f}")
 
 
-def run_cl(dataset_name, out_dir):
+def run_cl(dataset_name, out_dir, head='gcn'):
     data = LOADERS[dataset_name]()
     data['name'] = dataset_name
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Graph Clustering\n{'='*60}")
 
-    best_params, tr80, te20 = hparam_search_cl(data, seed=42, out_dir=out_dir)
+    best_params, tr80, te20 = hparam_search_cl(data, seed=42, out_dir=out_dir,
+                                                head=head)
 
     per_run_rows, nmis, aris, accs = [], [], [], []
     for seed in range(N_SEEDS):
         r = run_final_clustering(data, best_params, tr80, te20,
-                                  seed=seed, out_dir=out_dir)
+                                  seed=seed, out_dir=out_dir,
+                                  head=head)
         nmis.append(r['nmi']); aris.append(r['ari']); accs.append(r['acc'])
         row = {'dataset': dataset_name, 'task': 'cl', 'seed': seed,
                'nmi'     : round(r['nmi'], 4),
@@ -182,7 +187,7 @@ def run_cl(dataset_name, out_dir):
     print(f"  ACC : {summary['acc_mean']:.4f} ± {summary['acc_sd']:.4f}")
 
 
-def run_rec(dataset_name, out_dir, K_list=(10, 20, 50)):
+def run_rec(dataset_name, out_dir, head='gcn', K_list=(10, 20, 50)):
     import scipy.sparse as sp
     data   = LOADERS[dataset_name]()
     data['name'] = dataset_name
@@ -191,7 +196,7 @@ def run_rec(dataset_name, out_dir, K_list=(10, 20, 50)):
 
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Recommendation\n{'='*60}")
     best_params, tr80_edges, te20_edges = hparam_search_rec(
-        data, target_edges, seed=42, out_dir=out_dir)
+        data, target_edges, seed=42, out_dir=out_dir, head=head)
 
     K_list       = list(K_list)
     per_run_rows = []
@@ -202,7 +207,8 @@ def run_rec(dataset_name, out_dir, K_list=(10, 20, 50)):
         r = run_final_recommendation(
             data, best_params, tr80_edges, te20_edges,
             target_relation_idx=TARGET_REL_IDX[dataset_name],
-            K_list=K_list, seed=seed, out_dir=out_dir)
+            K_list=K_list, seed=seed, out_dir=out_dir,
+            head=head)
 
         for key in metric_vals: metric_vals[key].append(r.get(key, float('nan')))
 
@@ -233,13 +239,24 @@ def run_rec(dataset_name, out_dir, K_list=(10, 20, 50)):
 
 TASK_FNS = {'nc': run_nc, 'lp': run_lp, 'cl': run_cl, 'rec': run_rec}
 
+def run_with_head(fn, dataset_name, out_dir, head):
+    """Wrap a runner function with head parameter."""
+    return fn(dataset_name, out_dir, head=head)
+
+
 if __name__ == '__main__':
+    from .utils.env import setup_training_env, print_env_summary
+    setup_training_env()
+    print_env_summary()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', choices=['dblp','acm','imdb'], required=True)
     parser.add_argument('--task',    choices=['nc','lp','cl','rec'], required=True)
     parser.add_argument('--seeds',   type=int, default=N_SEEDS)
+    parser.add_argument('--head', choices=['gcn','gat'], default='gcn',
+                        help="GNN head: gcn (default) or gat")
     args = parser.parse_args()
 
     N_SEEDS = args.seeds
     out_dir = RESULT_DIRS[args.task]
-    TASK_FNS[args.task](args.dataset, out_dir)
+    TASK_FNS[args.task](args.dataset, out_dir, head=args.head)

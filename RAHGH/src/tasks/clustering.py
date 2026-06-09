@@ -5,11 +5,13 @@ from torch.optim import Adam
 from sklearn.cluster import KMeans
 from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
 from scipy.optimize import linear_sum_assignment
-import time
+import time, os
 from tqdm import tqdm
 
-from ..model.rahgh import RAHGH, compile_model
-from ..model.diffusion import build_operators
+from ..model.rahgh import (
+    build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
+    compile_model,
+)
 
 
 def clustering_accuracy(y_true, y_pred):
@@ -23,19 +25,17 @@ def clustering_accuracy(y_true, y_pred):
     return total / len(y_true)
 
 
-def _build_model(data, params, out_dim, device):
-    in_dims = [x.shape[1] for x in data['X_dict'].values()]
-    model = RAHGH(
-        in_dims=in_dims, d=params['d'], R=len(data['A_list_sp']),
-        K=params['K'], gcn_hidden=params['gcn_hidden'],
-        out_dim=out_dim, dropout=params['dropout'],
-        A_list_sp=data['A_list_sp'], N=data['N'], device=device,
+def _build_model(data, params, out_dim, device, head='gcn'):
+    model = build_rahgh_classifier(
+        data, hidden_dim=params['d'], num_classes=out_dim,
+        K=params['K'], head=head,
+        dropout_homo=params['dropout'], dropout_gnn=params['dropout'],
     ).to(device)
     return compile_model(model)
 
 
 def run_final_cluster(data, best_params, tr80_idx, te20_idx,
-                      seed=42, out_dir=None):
+                      seed=42, out_dir=None, head='gcn'):
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -43,10 +43,11 @@ def run_final_cluster(data, best_params, tr80_idx, te20_idx,
     Nt = data['target_size']
     n_cl = data['n_classes']
 
-    P_list = build_operators(data['A_list_sp'], data['bipartite_flags'], device)
-    X_list = [x.to(device) for x in data['X_dict'].values()]
+    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
+    edge_index_dict = build_edge_index_dict(data, device)
+    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    model = _build_model(data, best_params, out_dim=d, device=device)
+    model = _build_model(data, best_params, out_dim=d, device=device, head=head)
     decoder = torch.nn.Linear(d, d).to(device)
     opt = Adam(
         list(model.parameters()) + list(decoder.parameters()),
@@ -54,7 +55,7 @@ def run_final_cluster(data, best_params, tr80_idx, te20_idx,
     )
 
     tr_t = torch.tensor(tr80_idx, dtype=torch.long, device=device)
-    X_cat = torch.cat(X_list, dim=0)[:Nt][tr_t]
+    X_cat = torch.cat(list(x_dict.values()), dim=0)[:Nt][tr_t]
     if X_cat.shape[1] != d:
         X_cat = X_cat[:, :d] if X_cat.shape[1] > d \
                 else F.pad(X_cat, (0, d - X_cat.shape[1]))
@@ -68,7 +69,7 @@ def run_final_cluster(data, best_params, tr80_idx, te20_idx,
         model.train()
         decoder.train()
         opt.zero_grad()
-        emb, *_ = model(X_list, P_list)
+        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
         loss = F.mse_loss(decoder(emb[:Nt][tr_t]), X_cat)
         loss.backward()
         opt.step()
@@ -78,7 +79,7 @@ def run_final_cluster(data, best_params, tr80_idx, te20_idx,
 
     model.eval()
     with torch.no_grad():
-        emb, *_ = model(X_list, P_list)
+        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
     te_emb = emb[:Nt][te20_idx].cpu().numpy()
     te_labels = data['labels'][te20_idx].numpy()
 
@@ -90,6 +91,10 @@ def run_final_cluster(data, best_params, tr80_idx, te20_idx,
     ca = clustering_accuracy(te_labels, te_pred)
 
     if out_dir is not None:
+        os.makedirs(out_dir, exist_ok=True)
+        pt_path = os.path.join(out_dir, f'final_model_seed{seed}.pt')
+        torch.save(model.state_dict(), pt_path)
+
         import csv
         from pathlib import Path
         ep_path = Path(out_dir) / f'epoch_metrics_seed{seed}.csv'

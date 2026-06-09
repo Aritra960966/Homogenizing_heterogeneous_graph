@@ -5,11 +5,13 @@ import torch.nn.functional as F
 from torch.optim import Adam
 from sklearn.metrics import roc_auc_score, average_precision_score
 import scipy.sparse as sp
-import time
+import time, os
 from tqdm import tqdm
 
-from ..model.rahgh    import RAHGH, compile_model
-from ..model.diffusion import build_operators, normalize_plain
+from ..model.rahgh import (
+    RAHGHClassifier, compile_model,
+    build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
+)
 
 
 def split_edges(edges, seed=42):
@@ -49,42 +51,44 @@ class MLPDecoder(nn.Module):
             torch.cat([emb[src], emb[dst]], dim=1)).squeeze(-1)
 
 
-def _build_masked_operators(data, train_edges, device):
+def _build_masked_edge_index(data, train_edges, device):
+    """Build edge_index_dict from data but mask the first relation with train_edges."""
     N = data['N']
     tr_r, tr_c = train_edges[:, 0], train_edges[:, 1]
     A_train = sp.coo_matrix(
         (np.ones(len(tr_r)), (tr_r, tr_c)), shape=(N, N)).tocsr()
-    A_list_masked = list(data['A_list_sp'])
-    A_list_masked[0] = A_train
-    A_list_masked[1] = A_train.T.tocsr()
-    return build_operators(A_list_masked, data['bipartite_flags'], device)
+
+    rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
+    edge_dict = {}
+    for i, (A_sp, rname) in enumerate(zip(data['A_list_sp'], rel_names)):
+        A_use = A_train if i == 0 else A_sp
+        A_coo = A_use.tocoo()
+        ei = np.vstack([A_coo.row, A_coo.col])
+        edge_dict[rname] = torch.tensor(ei, dtype=torch.long, device=device)
+    return edge_dict
 
 
 PATIENCE = 100
 
 
 def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
-                 device, neg_ratio=5):
+                 device, neg_ratio=5, head='gcn'):
     torch.manual_seed(0)
     np.random.seed(0)
-    d       = params['d']
-    R       = len(data['A_list_sp'])
-    in_dims = [x.shape[1] for x in data['X_dict'].values()]
-    X_list  = [x.to(device) for x in data['X_dict'].values()]
+    d = params['d']
+    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
+    edge_index_dict = build_edge_index_dict(data, device)
+    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    P_list = _build_masked_operators(data, tr_edges, device)
-
-    backbone = RAHGH(
-        in_dims=in_dims, d=d, R=R, K=params['K'],
-        gcn_hidden=params['gcn_hidden'],
-        out_dim=d,
-        dropout=params['dropout'],
-        A_list_sp=data['A_list_sp'], N=data['N'], device=device,
+    model = build_rahgh_classifier(
+        data, hidden_dim=d, num_classes=d, K=params['K'],
+        head=head,
+        dropout_homo=params['dropout'], dropout_gnn=params['dropout'],
     ).to(device)
-    backbone = compile_model(backbone, verbose=True)
+    model = compile_model(model)
     decoder = MLPDecoder(d).to(device)
 
-    opt = Adam(list(backbone.parameters()) + list(decoder.parameters()),
+    opt = Adam(list(model.parameters()) + list(decoder.parameters()),
                lr=params['lr'], weight_decay=params['wd'])
     scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
@@ -110,11 +114,11 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
     max_epochs = params['epochs']
     pbar = tqdm(range(1, max_epochs + 1), desc="LP fold training", leave=False)
     for ep in pbar:
-        backbone.train()
+        model.train()
         decoder.train()
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
-            emb, *_ = backbone(X_list, P_list)
+            emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
             loss = F.binary_cross_entropy_with_logits(
                 decoder(emb, tr_s, tr_d), tr_l)
         if scaler is not None:
@@ -125,10 +129,10 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
             loss.backward()
             opt.step()
 
-        backbone.eval()
+        model.eval()
         decoder.eval()
         with torch.no_grad():
-            emb_v, *_ = backbone(X_list, P_list)
+            emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
             p = torch.sigmoid(decoder(emb_v, va_s, va_d)).cpu().numpy()
             auc = roc_auc_score(va_l.cpu().numpy(), p)
 
@@ -143,35 +147,31 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
                 pbar.set_description(f"Early stop @{ep}/{max_epochs} best={best_auc:.4f}")
                 break
 
-    del backbone, decoder
-    torch.cuda.empty_cache()
+    del model, decoder
     return best_auc
 
 
-def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
+def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5,
+                  head='gcn'):
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    d      = cfg['d']
+    d = cfg['d']
 
-    P_list  = build_operators(data['A_list_sp'], data['bipartite_flags'],
-                              device)
-    X_list  = [x.to(device) for x in data['X_dict'].values()]
-    in_dims = [x.shape[1] for x in data['X_dict'].values()]
-    R       = len(data['A_list_sp'])
+    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
+    edge_index_dict = build_edge_index_dict(data, device)
+    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    backbone = RAHGH(
-        in_dims=in_dims, d=d, R=R, K=K,
-        gcn_hidden=cfg['gcn_hidden'],
-        out_dim=d,
-        dropout=cfg['dropout'],
-        A_list_sp=data['A_list_sp'], N=data['N'], device=device,
+    model = build_rahgh_classifier(
+        data, hidden_dim=d, num_classes=d, K=K,
+        head=head,
+        dropout_homo=cfg['dropout'], dropout_gnn=cfg['dropout'],
     ).to(device)
-    backbone = compile_model(backbone, verbose=True)
+    model = compile_model(model)
 
     decoder   = MLPDecoder(d).to(device)
     optimizer = Adam(
-        list(backbone.parameters()) + list(decoder.parameters()),
+        list(model.parameters()) + list(decoder.parameters()),
         lr=cfg['lr'], weight_decay=cfg['wd'])
     scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
@@ -179,11 +179,11 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
     all_src = np.unique(target_edges[:, 0])
     all_dst = np.unique(target_edges[:, 1])
     tr_neg  = sample_negatives(tr_e, len(tr_e) * neg_ratio,
-                               all_src, all_dst, 0)
+                                all_src, all_dst, 0)
     va_neg  = sample_negatives(va_e, len(va_e) * neg_ratio,
-                               all_src, all_dst, 1)
+                                all_src, all_dst, 1)
     te_neg  = sample_negatives(te_e, len(te_e) * neg_ratio,
-                               all_src, all_dst, 2)
+                                all_src, all_dst, 2)
 
     def to_tensors(pos, neg):
         edges = np.concatenate([pos, neg], 0)
@@ -202,16 +202,16 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
         y = lbl.cpu().numpy()
         return roc_auc_score(y, p), average_precision_score(y, p)
 
-    best_auc, best_sd_bb, best_sd_dec = 0.0, None, None
+    best_auc, best_sd_h, best_sd_dec = 0.0, None, None
     t0 = time.time()
 
     pbar = tqdm(range(1, epochs + 1), desc="LP training", leave=False)
     for ep in pbar:
-        backbone.train()
+        model.train()
         decoder.train()
         optimizer.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
-            emb, *_ = backbone(X_list, P_list)
+            emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
             loss = F.binary_cross_entropy_with_logits(
                 decoder(emb, tr_s, tr_d), tr_l)
         if scaler is not None:
@@ -222,25 +222,25 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
             loss.backward()
             optimizer.step()
 
-        backbone.eval()
+        model.eval()
         decoder.eval()
         with torch.no_grad():
-            emb_v, *_ = backbone(X_list, P_list)
+            emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
             auc_v, _  = metrics(decoder(emb_v, va_s, va_d), va_l)
         pbar.set_description(f"loss={loss.item():.4f} val_auc={auc_v:.4f}")
         if auc_v > best_auc:
             best_auc    = auc_v
-            best_sd_bb  = {k: v.clone()
-                           for k, v in backbone.state_dict().items()}
+            best_sd_h  = {k: v.clone()
+                          for k, v in model.state_dict().items()}
             best_sd_dec = {k: v.clone()
                            for k, v in decoder.state_dict().items()}
 
-    backbone.load_state_dict(best_sd_bb)
+    model.load_state_dict(best_sd_h)
     decoder.load_state_dict(best_sd_dec)
-    backbone.eval()
+    model.eval()
     decoder.eval()
     with torch.no_grad():
-        emb_te, *_ = backbone(X_list, P_list)
+        emb_te, *_ = model(x_dict, edge_index_dict, node_type_indices)
         auc_te, ap_te = metrics(decoder(emb_te, te_s, te_d), te_l)
 
     return dict(auc=auc_te, ap=ap_te, best_val_auc=best_auc,
@@ -248,36 +248,33 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5):
 
 
 def run_final_lp(data, best_params, tr80_edges, te20_edges,
-                 seed=42, neg_ratio=5, out_dir=None):
+                 seed=42, neg_ratio=5, out_dir=None, head='gcn'):
     torch.manual_seed(seed)
     np.random.seed(seed)
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    d      = best_params['d']
-    R      = len(data['A_list_sp'])
-    in_dims = [x.shape[1] for x in data['X_dict'].values()]
-    X_list = [x.to(device) for x in data['X_dict'].values()]
+    d = best_params['d']
 
-    P_list = _build_masked_operators(data, tr80_edges, device)
+    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
+    edge_index_dict = build_edge_index_dict(data, device)
+    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    backbone = RAHGH(
-        in_dims=in_dims, d=d, R=R, K=best_params['K'],
-        gcn_hidden=best_params['gcn_hidden'],
-        out_dim=d,
-        dropout=best_params['dropout'],
-        A_list_sp=data['A_list_sp'], N=data['N'], device=device,
+    model = build_rahgh_classifier(
+        data, hidden_dim=d, num_classes=d, K=best_params['K'],
+        head=head,
+        dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
     ).to(device)
-    backbone = compile_model(backbone, verbose=True)
+    model = compile_model(model)
     decoder = MLPDecoder(d).to(device)
-    opt = Adam(list(backbone.parameters()) + list(decoder.parameters()),
+    opt = Adam(list(model.parameters()) + list(decoder.parameters()),
                lr=best_params['lr'], weight_decay=best_params['wd'])
     scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     all_src = np.unique(tr80_edges[:, 0])
     all_dst = np.unique(tr80_edges[:, 1])
     tr_neg  = sample_negatives(tr80_edges, len(tr80_edges) * neg_ratio,
-                               all_src, all_dst, 0)
+                                all_src, all_dst, 0)
     te_neg  = sample_negatives(te20_edges, len(te20_edges) * neg_ratio,
-                               all_src, all_dst, 2)
+                                all_src, all_dst, 2)
 
     def tensors(pos, neg):
         e = np.concatenate([pos, neg], 0)
@@ -290,17 +287,17 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
     tr_s, tr_d, tr_l = tensors(tr80_edges, tr_neg)
     te_s, te_d, te_l = tensors(te20_edges, te_neg)
 
-    best_sd_b, best_sd_d, best_auc = None, None, 0.0
+    best_sd_h, best_sd_d, best_auc = None, None, 0.0
     t0 = time.time()
 
     epoch_rows = []
     pbar = tqdm(range(1, best_params['epochs'] + 1), desc="Final LP training")
     for ep in pbar:
-        backbone.train()
+        model.train()
         decoder.train()
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
-            emb, *_ = backbone(X_list, P_list)
+            emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
             loss = F.binary_cross_entropy_with_logits(
                 decoder(emb, tr_s, tr_d), tr_l)
         if scaler is not None:
@@ -311,11 +308,10 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
             loss.backward()
             opt.step()
 
-        # Track training AUC every epoch
-        backbone.eval()
+        model.eval()
         decoder.eval()
         with torch.no_grad():
-            emb_v, a, b, _ = backbone(X_list, P_list)
+            emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
             pv = torch.sigmoid(decoder(emb_v, tr_s, tr_d)).cpu().numpy()
             train_auc = roc_auc_score(tr_l.cpu().numpy(), pv)
         epoch_rows.append({'epoch': ep, 'loss': loss.item(),
@@ -325,20 +321,27 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
             pbar.set_description(f"loss={loss.item():.4f} train_auc={train_auc:.4f}")
             if train_auc > best_auc:
                 best_auc  = train_auc
-                best_sd_b = {k: v.clone()
-                             for k, v in backbone.state_dict().items()}
+                best_sd_h = {k: v.clone()
+                             for k, v in model.state_dict().items()}
                 best_sd_d = {k: v.clone()
                              for k, v in decoder.state_dict().items()}
 
-    backbone.load_state_dict(best_sd_b)
+    model.load_state_dict(best_sd_h)
     decoder.load_state_dict(best_sd_d)
-    backbone.eval()
+    model.eval()
     decoder.eval()
     with torch.no_grad():
-        emb_te, alpha, beta, _ = backbone(X_list, P_list)
+        emb_te, alpha = model(x_dict, edge_index_dict, node_type_indices)
         p = torch.sigmoid(decoder(emb_te, te_s, te_d)).cpu().numpy()
         auc = roc_auc_score(te_l.cpu().numpy(), p)
         ap  = average_precision_score(te_l.cpu().numpy(), p)
+
+    # Save final model
+    if out_dir is not None:
+        os.makedirs(out_dir, exist_ok=True)
+        pt_path = os.path.join(out_dir, f'final_model_seed{seed}.pt')
+        torch.save(model.state_dict(), pt_path)
+        print(f"  Model saved → {pt_path}")
 
     # Save epoch metrics
     if out_dir is not None:
@@ -352,5 +355,4 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
 
     return dict(auc=auc, ap=ap,
                 alpha=alpha.detach().cpu().numpy(),
-                beta=beta.detach().cpu().numpy(),
                 time_sec=time.time() - t0)
