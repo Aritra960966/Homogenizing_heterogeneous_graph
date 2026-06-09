@@ -296,19 +296,23 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc', head='gcn'):
     t0_hp = time.time()
     n_total = len(combos) * N_FOLDS
     print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {n_total} runs", flush=True)
-    for ci, params in enumerate(tqdm(combos, desc="HP combos", leave=True)):
+    for ci, params in enumerate(combos):
         t_combo = time.time()
+        print(f"\n  combination {ci+1}({params})", flush=True)
         fold_scores = []
-        for fold, (tr_fold, va_fold) in enumerate(skf.split(tr80, lbl_np[tr80])):
+        fold_iter = tqdm(skf.split(tr80, lbl_np[tr80]), desc=f"    fold", total=N_FOLDS, leave=False)
+        for fold, (tr_fold, va_fold) in enumerate(fold_iter):
             vm = _run_fold_nc(data, params, tr80[tr_fold], tr80[va_fold], device, head=head,
                               x_dict=x_dict_once, edge_index_dict=edge_index_dict_once,
                               labels=labels_once, node_type_indices=node_type_indices_once)
             fold_scores.append(vm)
+            fold_iter.set_postfix(macro_f1=f"{vm:.4f}")
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_macro': round(vm, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_vm = float(np.mean(fold_scores))
         elapsed = time.time() - t_combo
-        print(f"  combo {ci+1}/{len(combos)}: mean_val_macro={mean_vm:.4f}  [{elapsed:.0f}s]  params={params}", flush=True)
+        print(f"    fold_scores={[round(s, 4) for s in fold_scores]}")
+        print(f"    mean_macro_f1={mean_vm:.4f}  [{elapsed:.0f}s]", flush=True)
         if mean_vm > best_mean: best_mean, best_params = mean_vm, params
 
     total_hp = time.time() - t0_hp

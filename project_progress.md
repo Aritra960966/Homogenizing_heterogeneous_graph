@@ -23,39 +23,53 @@
 | `rahgh_model_spec.md` — RAHGHClassifier docstring updated | ✅ Done | `rahgh_model_spec.md:896` |
 | `rahgh_model_spec.md` — Two-Stage Message Passing Philosophy section added | ✅ Done | `rahgh_model_spec.md:1049` |
 
-Change: Explicitly documents linear polynomial diffusion (Stage 4) as purely spectral filtering vs. non-linear GCN/GAT backbone as the weight-matrix learner, preventing future "optimization" that would merge or remove either phase.
-
-## Experiment Tasks & Source Files — Status
+## Experiment Tasks — v4 Source Files Status
 
 | Item | Status | Location |
 |------|--------|----------|
-| Task: Node Classification | ✅ Spec'd in `EXPERIMENT_GUIDE_v4.md` | Steps 1–6 |
-| Task: Link Prediction | ✅ Spec'd in `EXPERIMENT_GUIDE_v4.md` | Steps 7–12 |
-| Task: Graph Clustering (`graph_clustering.py`) | ✅ Added | `src/tasks/graph_clustering.py` — Step 13 |
-| Task: Recommendation (`recommendation.py`) | ✅ Added | `src/tasks/recommendation.py` — Step 14 |
-| Extended hparam_search (`hparam_search_cluster`, `hparam_search_rec`) | ✅ Added | `src/tasks/hparam_search.py` — Step 15 |
-| CSV storage specification (4-task folder structure) | ✅ Documented | `EXPERIMENT_GUIDE_v4.md` — Step 16 |
-| `collect_results.py` (LaTeX-ready summary) | ✅ Added | `scripts/collect_results.py` — Step 16 |
+| Node Classification (`node_classification.py`) | ✅ Existing, no changes needed | `src/tasks/node_classification.py` |
+| Link Prediction (`link_prediction.py`) | ✅ Existing, no changes needed | `src/tasks/link_prediction.py` |
+| Graph Clustering (`graph_clustering.py`) | ✅ **NEW** — unsupervised training + K-Means eval (NMI, ARI, ACC) | `src/tasks/graph_clustering.py` |
+| Recommendation (`recommendation.py`) | ✅ **NEW** — BPR loss + top-K metrics (Recall@K, NDCG@K, Hit@K, Precision@K, MRR) | `src/tasks/recommendation.py` |
+| HParam Search (`hparam_search.py`) | ✅ **Updated** — random search (50 combos), cl/rec CV wrappers, CSV + best_params.json logging | `src/tasks/hparam_search.py` |
+| Train Orchestrator (`train.py`) | ✅ **Updated** — all 4 tasks, N_SEEDS=10, per-run + summary CSVs per task dir | `src/train.py` |
 
 ## Config Files — Status
 
 | File | Task | Dataset |
 |------|------|---------|
-| `configs/dblp_cluster.yaml` | ✅ Cluster | DBLP |
-| `configs/acm_cluster.yaml` | ✅ Cluster | ACM |
-| `configs/amazon_rec.yaml` | ✅ Rec | Amazon |
-| `configs/lastfm_rec.yaml` | ✅ Rec | LastFM |
-| `configs/dblp_rec.yaml` | ✅ Rec | DBLP (author→paper) |
-
-All defined in `EXPERIMENT_GUIDE_v4.md` — Step 17.
+| `configs/dblp_nc.yaml` | ✅ NC | DBLP |
+| `configs/acm_nc.yaml` | ✅ NC | ACM |
+| `configs/imdb_nc.yaml` | ✅ NC | IMDB |
+| `configs/dblp_lp.yaml` | ✅ LP | DBLP |
+| `configs/acm_lp.yaml` | ✅ LP | ACM |
+| `configs/imdb_lp.yaml` | ✅ LP | IMDB |
+| `configs/dblp_cl.yaml` | ✅ **NEW** Cluster | DBLP |
+| `configs/acm_cl.yaml` | ✅ **NEW** Cluster | ACM |
+| `configs/imdb_cl.yaml` | ✅ **NEW** Cluster | IMDB |
+| `configs/dblp_rec.yaml` | ✅ **NEW** Rec | DBLP |
+| `configs/acm_rec.yaml` | ✅ **NEW** Rec | ACM |
+| `configs/imdb_rec.yaml` | ✅ **NEW** Rec | IMDB |
 
 ## Run Scripts — Status
 
 | Script | Purpose |
 |--------|---------|
-| `scripts/run_clustering.sh` | Graph clustering (DBLP, ACM, IMDB) — Step 18 |
-| `scripts/run_rec.sh` | Recommendation (Amazon, LastFM, DBLP) — Step 18 |
-| `scripts/run_all.sh` | Full experiment suite (NC → LP → Cluster → Rec) — Step 18 |
+| `scripts/run_nc.sh` | Node classification (DBLP, ACM, IMDB) |
+| `scripts/run_lp.sh` | Link prediction (DBLP, ACM, IMDB) |
+| `scripts/run_cl.sh` | **NEW** Graph clustering (DBLP, ACM, IMDB) |
+| `scripts/run_rec.sh` | **NEW** Recommendation (DBLP, ACM, IMDB) |
+
+## Results Directories — Status
+
+| Directory | Contents |
+|-----------|----------|
+| `results/nc/` | ✅ cv_fold_scores.csv, per_run_results.csv, summary.csv, epoch_logs/ |
+| `results/lp/` | ✅ cv_fold_scores.csv, per_run_results.csv, summary.csv, epoch_logs/ |
+| `results/clustering/` | ✅ cv_fold_scores.csv, per_run_results.csv, summary.csv, epoch_logs/ |
+| `results/recommendation/` | ✅ cv_fold_scores.csv, per_run_results.csv, summary.csv, epoch_logs/ |
+
+All dirs created with `best_params.json` support via `_save_best_params()`.
 
 ## Metrics Summary
 
@@ -63,23 +77,27 @@ All defined in `EXPERIMENT_GUIDE_v4.md` — Step 17.
 |------|-----------------|--------------|
 | Node Classification | Accuracy ± std, Macro-F1 ± std, Micro-F1 ± std | Macro-F1 |
 | Link Prediction | AUC-ROC ± std, AP ± std | AUC-ROC |
-| Graph Clustering | NMI ± std, ARI ± std, ACC ± std, Silhouette ± std | NMI |
-| Recommendation | Hits@1/5/10/20, NDCG@10, Recall@10, MRR | Hits@10 |
+| Graph Clustering | NMI ± std, ARI ± std, ACC ± std | NMI |
+| Recommendation | Recall@K, NDCG@K, Hit@K, Precision@K, MRR (K ∈ {10,20,50}) | Recall@K |
 
 All means & std computed over **10 seeds** on the held-out 20 % test set.
 
-## Training Output Cleanup
+## Command Reference
 
-| Change | Status | Files |
-|--------|--------|-------|
-| Removed all per-stage `print()` statements from model forward passes | ✅ Done | `projector.py`, `diffusion.py`, `fusion.py`, `rahgh.py` |
-| Removed all per-stage `print()` from training/evaluation code | ✅ Done | `node_classification.py`, `link_prediction.py`, `hparam_search.py`, `train.py` |
-| Added live epoch metrics via `tqdm.set_description()` | ✅ Done | `_run_fold_nc`, `run_single_nc`, `run_final_nc`, `_run_fold_lp`, `run_single_lp`, `run_final_lp` |
-| Verified all CUDA device placement | ✅ Done | All models `.to(device)`, all tensors `device=device`, operators built on correct device |
+```bash
+python -m src.train --dataset dblp --task nc   --seeds 10
+python -m src.train --dataset acm  --task cl   --seeds 10
+python -m src.train --dataset imdb --task rec  --seeds 10
+python -m src.train --dataset dblp --task lp   --seeds 10
+```
 
-Remaining output: experiment header, final results summary, and tqdm progress bars — no intermediate stage noise.
+## Git
 
-## Next Steps
+| Item | Status |
+|------|--------|
+| `.gitignore` | ✅ Created (pycache, graph_cu, __MACOSX, drive-download-*, results) |
+| Repo initialized | ✅ `main` branch |
+| Remote | ✅ `origin/main` pushed to `https://github.com/Aritra960966/Homogenizing_heterogeneous_graph.git` |
+| v4 changes committed | ✅ 13 files, commit `4679edc` |
 
-1. Run `python RAHGH/scripts/setup_data.py` if needed to verify paths
-2. Proceed with experiments per `RAHGH/project_flow.md` — start with `scripts/run_all.sh`
+**Note:** Remote `master` branch still exists as default on GitHub. Change default to `main` at Settings → Branches, then `git push origin --delete master`.

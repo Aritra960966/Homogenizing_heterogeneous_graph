@@ -32,7 +32,7 @@ For each dataset–task combination, the script automatically runs:
 
 ### Node Classification (NC)
 
-```powershell
+```powershellall 
 python -m src.train --dataset dblp --task nc --out results/logs/dblp_nc.csv --seeds 10
 python -m src.train --dataset acm  --task nc --out results/logs/acm_nc.csv  --seeds 10
 python -m src.train --dataset imdb --task nc --out results/logs/imdb_nc.csv --seeds 10

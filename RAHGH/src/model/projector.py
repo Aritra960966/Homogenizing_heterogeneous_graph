@@ -11,8 +11,7 @@ class TypeSpecificProjector(nn.Module):
         ])
 
     def forward(self, X_list: list) -> torch.Tensor:
-        out = torch.cat([
+        return torch.cat([
             F.relu(proj(X))
             for proj, X in zip(self.projections, X_list)
         ], dim=0)
-        return out
