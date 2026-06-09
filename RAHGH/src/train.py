@@ -59,9 +59,10 @@ def _flatten_result(r):
 
 
 def run_nc(dataset_name, out_dir, head='gcn'):
+    print(f"\nLoading {dataset_name} data...", flush=True)
     data = LOADERS[dataset_name]()
     data['name'] = dataset_name
-    print(f"\n{'='*60}\n  {dataset_name.upper()} — Node Classification\n{'='*60}")
+    print(f"\n{'='*60}\n  {dataset_name.upper()} — Node Classification\n{'='*60}", flush=True)
 
     best_params, tr80, te20 = hparam_search_nc(data, seed=42, out_dir=out_dir,
                                                 head=head)

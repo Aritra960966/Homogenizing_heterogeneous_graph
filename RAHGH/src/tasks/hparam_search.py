@@ -1,9 +1,10 @@
-import itertools, random, time, json, os
+import itertools, random, time, json, os, sys
 import numpy as np, torch
 from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
 import torch.nn.functional as F
 from torch.optim import Adam
+from tqdm import tqdm
 
 from ..model.rahgh import (
     build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
@@ -292,7 +293,10 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc', head='gcn'):
     cv_rows = []
     best_params, best_mean = None, 0.0
 
-    for ci, params in enumerate(combos):
+    t0_hp = time.time()
+    print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {len(combos)*N_FOLDS} runs", flush=True)
+    for ci, params in enumerate(tqdm(combos, desc="HP combos", leave=True)):
+        t_combo = time.time()
         fold_scores = []
         for fold, (tr_fold, va_fold) in enumerate(skf.split(tr80, lbl_np[tr80])):
             vm = _run_fold_nc(data, params, tr80[tr_fold], tr80[va_fold], device, head=head,
@@ -302,11 +306,14 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc', head='gcn'):
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_macro': round(vm, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_vm = float(np.mean(fold_scores))
+        elapsed = time.time() - t_combo
+        print(f"  combo {ci+1}/{len(combos)}: mean_val_macro={mean_vm:.4f}  [{elapsed:.0f}s]  params={params}", flush=True)
         if mean_vm > best_mean: best_mean, best_params = mean_vm, params
 
+    total_hp = time.time() - t0_hp
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'nc', out_dir)
-    print(f"[NC hparam] best_val_macro={best_mean:.4f}  params={best_params}")
+    print(f"[NC hparam] best_val_macro={best_mean:.4f}  params={best_params}  total={total_hp:.0f}s", flush=True)
     return best_params, tr80, te20
 
 
