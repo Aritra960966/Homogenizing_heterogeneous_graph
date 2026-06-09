@@ -35,7 +35,7 @@ PARAM_GRID_REC = {
     'bpr_reg' : [1e-4, 1e-3],
 }
 
-N_ITER    = 50
+N_ITER    = 100
 N_FOLDS   = 5
 TEST_FRAC = 0.20
 PATIENCE  = 50
@@ -294,7 +294,8 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc', head='gcn'):
     best_params, best_mean = None, 0.0
 
     t0_hp = time.time()
-    print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {len(combos)*N_FOLDS} runs", flush=True)
+    n_total = len(combos) * N_FOLDS
+    print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {n_total} runs", flush=True)
     for ci, params in enumerate(tqdm(combos, desc="HP combos", leave=True)):
         t_combo = time.time()
         fold_scores = []
