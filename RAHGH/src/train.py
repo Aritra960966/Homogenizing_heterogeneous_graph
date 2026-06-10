@@ -15,7 +15,7 @@ from .tasks.recommendation      import run_final_recommendation
 LOADERS  = {'dblp': load_dblp, 'acm': load_acm, 'imdb': load_imdb}
 N_SEEDS  = 10
 
-TARGET_REL_IDX = {'dblp': 0, 'acm': 4, 'imdb': 2}
+TARGET_REL_IDX = {'dblp': 0, 'acm': 0, 'imdb': 2}
 
 RESULT_DIRS = {
     'nc'  : 'results/nc',
@@ -67,18 +67,20 @@ def run_nc(dataset_name, out_dir, head='gcn'):
     best_params, tr80, te20 = hparam_search_nc(data, seed=42, out_dir=out_dir,
                                                 head=head)
 
-    per_run_rows, macros, micros, accs = [], [], [], []
+    per_run_rows, macros, micros, accs, aucs = [], [], [], [], []
     for seed in range(N_SEEDS):
         r = run_final_nc(data, best_params, tr80, te20, seed=seed,
                          out_dir=out_dir, head=head)
         macros.append(r['test_macro'])
         micros.append(r['test_micro'])
         accs.append(r['test_acc'])
+        aucs.append(r['test_auc'])
 
         row = {'dataset': dataset_name, 'task': 'nc', 'seed': seed,
                'test_macro_f1': round(r['test_macro'], 4),
                'test_micro_f1': round(r['test_micro'], 4),
                'test_accuracy': round(r['test_acc'],   4),
+               'test_auc'     : round(r['test_auc'],   4),
                'time_sec'     : round(r['time_sec'],   2),
                **{f'hp_{k}': v for k, v in best_params.items()}}
         per_run_rows.append(_flatten_result(row))
@@ -93,6 +95,8 @@ def run_nc(dataset_name, out_dir, head='gcn'):
         'micro_f1_sd'   : round(float(np.std(micros)),  4),
         'accuracy_mean' : round(float(np.mean(accs)),   4),
         'accuracy_sd'   : round(float(np.std(accs)),    4),
+        'auc_mean'      : round(float(np.mean(aucs)),   4),
+        'auc_sd'        : round(float(np.std(aucs)),    4),
         'n_seeds'       : N_SEEDS,
         **{f'best_hp_{k}': v for k, v in best_params.items()},
     }
@@ -102,6 +106,7 @@ def run_nc(dataset_name, out_dir, head='gcn'):
     print(f"  Macro-F1 : {summary['macro_f1_mean']:.4f} ± {summary['macro_f1_sd']:.4f}")
     print(f"  Micro-F1 : {summary['micro_f1_mean']:.4f} ± {summary['micro_f1_sd']:.4f}")
     print(f"  Accuracy : {summary['accuracy_mean']:.4f} ± {summary['accuracy_sd']:.4f}")
+    print(f"  AUC (OvR): {summary['auc_mean']:.4f} ± {summary['auc_sd']:.4f}")
 
 
 def run_lp(dataset_name, out_dir, head='gcn'):

@@ -41,13 +41,9 @@ def load_imdb(root="data/raw/IMDB"):
 
     MD = build_coo(md_r, md_c); DM = MD.T.tocsr()
     MA = build_coo(ma_r, ma_c); AM = MA.T.tocsr()
-    DA_raw = (DM @ MA).tocsr(); DA_raw.data[:] = 1.0; DA_raw.eliminate_zeros()
-    AD = DA_raw.T.tocsr()
-
-    A_list_sp = [MD, DM, MA, AM, DA_raw, AD]
+    A_list_sp = [MD, DM, MA, AM]
     relation_names = ['movie→dir','dir→movie',
-                      'movie→act','act→movie',
-                      'dir→act',  'act→dir']
+                      'movie→act','act→movie']
 
     keywords = df['plot_keywords'].fillna('').str.replace('|',' ',regex=False)
     vec      = CountVectorizer(max_features=3000)
@@ -64,5 +60,5 @@ def load_imdb(root="data/raw/IMDB"):
         Nm=Nm, Nd=Nd, Na=Na, N=N,
         target_type='movie', target_size=Nm,
         n_classes=3,
-        bipartite_flags=[True,True,True,True,True,True],
+        bipartite_flags=[True,True,True,True],
     )

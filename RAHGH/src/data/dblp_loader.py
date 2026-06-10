@@ -94,10 +94,10 @@ def load_dblp(root="data/raw/DBLP"):
     PC = build_coo(pc_r, pc_c, (N, N))
     CP = PC.T.tocsr()
 
-    A_list_sp = [PA, AP, PT, TP, PC, CP]
-    relation_names = ['paper→author','author→paper',
-                      'paper→term','term→paper',
-                      'paper→conf','conf→paper']
+    A_list_sp = [AP, PA, TP, PT, CP, PC]
+    relation_names = ['author→paper','paper→author',
+                      'term→paper','paper→term',
+                      'conf→paper','paper→conf']
 
     stopwords = list(sk_sw.union(set(nltk_sw.words('english'))))
     vec = CountVectorizer(min_df=2, stop_words=stopwords,
