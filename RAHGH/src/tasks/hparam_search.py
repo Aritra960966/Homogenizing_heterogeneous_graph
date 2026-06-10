@@ -316,21 +316,32 @@ def hparam_search_cl(data, seed=42, out_dir='results/clustering', head='gcn'):
     cv_rows = []
     best_params, best_mean = None, 0.0
 
+    n_total = len(combos) * N_FOLDS
+    print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {n_total} runs", flush=True)
+    t0_hp = time.time()
     for ci, params in enumerate(combos):
+        t_combo = time.time()
+        print(f"\n  combination {ci+1} {params}", flush=True)
         fold_nmis = []
-        for fold, (tr_fold, va_fold) in enumerate(skf.split(tr80, lbl_np[tr80])):
+        fold_iter = tqdm(skf.split(tr80, lbl_np[tr80]), desc=f"    fold", total=N_FOLDS, leave=False)
+        for fold, (tr_fold, va_fold) in enumerate(fold_iter):
             nmi = _run_fold_cl(data, params, tr80[tr_fold], tr80[va_fold], device, head=head,
                                x_dict=x_dict_once, edge_index_dict=edge_index_dict_once,
                                node_type_indices=node_type_indices_once)
             fold_nmis.append(nmi)
+            fold_iter.set_postfix(nmi=f"{nmi:.4f}")
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_nmi': round(nmi, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_nmi = float(np.mean(fold_nmis))
+        elapsed = time.time() - t_combo
+        print(f"    fold_nmis={[round(s, 4) for s in fold_nmis]}")
+        print(f"    mean_nmi={mean_nmi:.4f}  [{elapsed:.0f}s]", flush=True)
         if mean_nmi > best_mean: best_mean, best_params = mean_nmi, copy.deepcopy(params)
 
+    total_hp = time.time() - t0_hp
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'cl', out_dir)
-    print(f"[CL hparam] best_val_nmi={best_mean:.4f}  params={best_params}")
+    print(f"[CL hparam] best_val_nmi={best_mean:.4f}  params={best_params}  total={total_hp:.0f}s", flush=True)
     return best_params, tr80, te20
 
 

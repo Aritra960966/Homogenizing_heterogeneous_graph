@@ -48,6 +48,7 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
     emb_np = logits[:Nt].cpu().numpy()
     y      = data['labels'].numpy()
 
+    print(f"    Running KMeans (n_clusters={n_cl}, n_init=20) on {len(emb_np)} nodes...", flush=True)
     km   = KMeans(n_clusters=n_cl, n_init=20, random_state=seed)
     pred = km.fit_predict(emb_np)
     nmi  = normalized_mutual_info_score(y, pred)
