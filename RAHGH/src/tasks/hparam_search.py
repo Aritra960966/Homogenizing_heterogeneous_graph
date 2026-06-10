@@ -133,42 +133,16 @@ def _run_fold_cl(data, params, tr_idx, va_idx, device, head='gcn',
 
     Nt = data['target_size']
     n_cl = data['n_classes']
-    d = params['d']
 
-    model = _build_model(data, params, out_dim=d, device=device, head=head)
-    decoder = torch.nn.Linear(d, d).to(device)
-    opt = Adam(
-        list(model.parameters()) + list(decoder.parameters()),
-        lr=params['lr'], weight_decay=params['wd'],
-    )
-
-    tr_t = torch.tensor(tr_idx, dtype=torch.long, device=device)
-    X_cat = torch.cat(list(x_dict.values()), dim=0)[:Nt][tr_t]
-    if X_cat.shape[1] != d:
-        X_cat = X_cat[:, :d] if X_cat.shape[1] > d \
-                else F.pad(X_cat, (0, d - X_cat.shape[1]))
-
-    best_nmi = 0.0
-
-    for ep in range(1, params['epochs'] + 1):
-        model.train(); decoder.train()
-        opt.zero_grad()
-        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
-        loss = F.mse_loss(decoder(emb[:Nt][tr_t]), X_cat)
-        loss.backward()
-        opt.step()
-
-        if ep % 50 == 0 or ep == params['epochs']:
-            model.eval()
-            with torch.no_grad():
-                emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            emb_np = emb_v[:Nt][va_idx].cpu().numpy()
-            pred = KMeans(n_clusters=n_cl, n_init=10, random_state=0).fit_predict(emb_np)
-            nmi = normalized_mutual_info_score(data['labels'][va_idx].numpy(), pred)
-            best_nmi = max(best_nmi, nmi)
-
-    del model, decoder
-    return best_nmi
+    model = _build_model(data, params, out_dim=Nt, device=device, head=head)
+    model.eval()
+    with torch.no_grad():
+        emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
+    emb_np = emb_v[:Nt][va_idx].cpu().numpy()
+    pred = KMeans(n_clusters=n_cl, n_init=10, random_state=0).fit_predict(emb_np)
+    nmi = normalized_mutual_info_score(data['labels'][va_idx].numpy(), pred)
+    del model
+    return nmi
 
 
 def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20,
