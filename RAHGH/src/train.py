@@ -259,5 +259,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     N_SEEDS = args.seeds
-    out_dir = RESULT_DIRS[args.task]
+    out_dir = os.path.join(RESULT_DIRS[args.task], args.dataset)
     TASK_FNS[args.task](args.dataset, out_dir, head=args.head)

@@ -1,4 +1,4 @@
-import itertools, random, time, json, os, sys
+import itertools, random, time, json, os, sys, copy
 import numpy as np, torch
 from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
@@ -313,7 +313,7 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc', head='gcn'):
         elapsed = time.time() - t_combo
         print(f"    fold_scores={[round(s, 4) for s in fold_scores]}")
         print(f"    mean_macro_f1={mean_vm:.4f}  [{elapsed:.0f}s]", flush=True)
-        if mean_vm > best_mean: best_mean, best_params = mean_vm, params
+        if mean_vm > best_mean: best_mean, best_params = mean_vm, copy.deepcopy(params)
 
     total_hp = time.time() - t0_hp
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
@@ -352,7 +352,7 @@ def hparam_search_cl(data, seed=42, out_dir='results/clustering', head='gcn'):
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_nmi': round(nmi, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_nmi = float(np.mean(fold_nmis))
-        if mean_nmi > best_mean: best_mean, best_params = mean_nmi, params
+        if mean_nmi > best_mean: best_mean, best_params = mean_nmi, copy.deepcopy(params)
 
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'cl', out_dir)
@@ -391,7 +391,7 @@ def hparam_search_rec(data, target_edges, seed=42, out_dir='results/recommendati
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_recall': round(rec, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_rec = float(np.mean(fold_recs))
-        if mean_rec > best_mean: best_mean, best_params = mean_rec, params
+        if mean_rec > best_mean: best_mean, best_params = mean_rec, copy.deepcopy(params)
 
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'rec', out_dir)
@@ -430,7 +430,7 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp', head='gc
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_auc': round(auc, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_auc = float(np.mean(fold_aucs))
-        if mean_auc > best_mean: best_mean, best_params = mean_auc, params
+        if mean_auc > best_mean: best_mean, best_params = mean_auc, copy.deepcopy(params)
 
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'lp', out_dir)
