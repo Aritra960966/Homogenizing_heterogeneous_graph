@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.optim import Adam
-from sklearn.metrics import f1_score
+from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 import time, os
 from tqdm import tqdm
@@ -16,9 +16,16 @@ from ..model.rahgh import (
 def _evaluate(logits, target_size, idx, labels_full):
     p = logits[:target_size][idx].argmax(1).cpu().numpy()
     y = labels_full[idx].numpy()
+    prob = torch.softmax(logits[:target_size][idx], dim=1).cpu().numpy()
+    n_classes = prob.shape[1]
+    if n_classes == 2:
+        auc = roc_auc_score(y, prob[:, 1])
+    else:
+        auc = roc_auc_score(y, prob, multi_class='ovr')
     return ((p == y).mean(),
             f1_score(y, p, average='macro',  zero_division=0),
-            f1_score(y, p, average='micro',  zero_division=0))
+            f1_score(y, p, average='micro',  zero_division=0),
+            auc)
 
 
 def run_single_nc(data, K, epochs, seed, cfg, head='gcn'):
@@ -72,7 +79,7 @@ def run_single_nc(data, K, epochs, seed, cfg, head='gcn'):
         model.eval()
         with torch.no_grad():
             logits, a = model(x_dict, edge_index_dict, node_type_indices)
-            _, vm, _ = _evaluate(logits, Nt, va_t.cpu().numpy(), data['labels'])
+            _, vm, _, _ = _evaluate(logits, Nt, va_t.cpu().numpy(), data['labels'])
         pbar.set_description(f"loss={loss.item():.4f} val_macro={vm:.4f}")
         if vm > best_val:
             best_val = vm
@@ -83,9 +90,9 @@ def run_single_nc(data, K, epochs, seed, cfg, head='gcn'):
     model.eval()
     with torch.no_grad():
         logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-        acc, macro, micro = _evaluate(logits, Nt, te_t.cpu().numpy(), data['labels'])
+        acc, macro, micro, auc = _evaluate(logits, Nt, te_t.cpu().numpy(), data['labels'])
 
-    return dict(test_acc=acc, test_macro=macro, test_micro=micro,
+    return dict(test_acc=acc, test_macro=macro, test_micro=micro, test_auc=auc,
                 best_val_macro=best_val, alpha=best_alpha,
                 time_sec=time.time() - t0)
 
@@ -143,7 +150,7 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
     model.eval()
     with torch.no_grad():
         logits, alpha = model(x_dict, edge_index_dict, node_type_indices)
-        acc, macro, micro = _evaluate(logits, Nt, te20_idx, data['labels'])
+        acc, macro, micro, auc = _evaluate(logits, Nt, te20_idx, data['labels'])
 
     # Save final model
     if out_dir is not None:
@@ -164,6 +171,6 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
                 w.writeheader()
             w.writerows(epoch_rows)
 
-    return dict(test_acc=acc, test_macro=macro, test_micro=micro,
+    return dict(test_acc=acc, test_macro=macro, test_micro=micro, test_auc=auc,
                 alpha=alpha.detach().cpu().numpy(),
                 time_sec=time.time() - t0)
