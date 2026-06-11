@@ -110,6 +110,7 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
         data, hidden_dim=d, num_classes=d, K=best_params['K'],
         head=head,
         dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
+        gnn_hidden_dim=best_params.get('hidden', d),
     ).to(device)
     opt = Adam(model.parameters(), lr=best_params['lr'],
                weight_decay=best_params['wd'])

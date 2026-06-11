@@ -61,4 +61,10 @@ def load_imdb(root="data/raw/IMDB"):
         target_type='movie', target_size=Nm,
         n_classes=3,
         bipartite_flags=[True,True,True,True],
+        relation_info={
+            'movie→dir': ('movie', 'director'),
+            'dir→movie': ('director', 'movie'),
+            'movie→act': ('movie', 'actor'),
+            'act→movie': ('actor', 'movie'),
+        },
     )

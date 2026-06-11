@@ -132,4 +132,12 @@ def load_dblp(root="data/raw/DBLP"):
         target_type='author', target_size=Na,
         n_classes=len(author_label['label'].unique()),
         bipartite_flags=[True, True, True, True, True, True],
+        relation_info={
+            'author→paper': ('author', 'paper'),
+            'paper→author': ('paper', 'author'),
+            'term→paper':   ('term', 'paper'),
+            'paper→term':   ('paper', 'term'),
+            'conf→paper':   ('conf', 'paper'),
+            'paper→conf':   ('paper', 'conf'),
+        },
     )

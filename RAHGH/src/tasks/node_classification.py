@@ -44,6 +44,7 @@ def run_single_nc(data, K, epochs, seed, cfg, head='gcn'):
         data, hidden_dim=d, num_classes=data['n_classes'], K=K,
         head=head,
         dropout_homo=cfg['dropout'], dropout_gnn=cfg['dropout'],
+        gnn_hidden_dim=cfg.get('hidden', d),
     ).to(device)
     model = compile_model(model)
     opt = Adam(model.parameters(), lr=cfg['lr'], weight_decay=cfg['wd'])
@@ -114,6 +115,7 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         data, hidden_dim=d, num_classes=data['n_classes'],
         K=best_params['K'], head=head,
         dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
+        gnn_hidden_dim=best_params.get('hidden', d),
     ).to(device)
     model = compile_model(model)
     opt = Adam(model.parameters(), lr=best_params['lr'], weight_decay=best_params['wd'])

@@ -367,11 +367,13 @@ class RAHGHClassifier(nn.Module):
         dropout_homo: float = 0.2,
         dropout_gnn: float = 0.5,
         directed: bool = False,
+        gnn_hidden_dim: Optional[int] = None,
     ):
         super().__init__()
         self.num_nodes      = num_nodes
         self.relation_names = list(relation_info.keys())
         self.head_type      = head
+        gnn_hidden_dim = gnn_hidden_dim or hidden_dim
 
         # RAHGH homogenizer (Stages 1-6)
         self.homogenizer = RAHGH(
@@ -389,14 +391,14 @@ class RAHGHClassifier(nn.Module):
         if head == "gcn":
             self.head = SimpleGCN(
                 in_dim=hidden_dim,
-                hidden_dim=hidden_dim,
+                hidden_dim=gnn_hidden_dim,
                 out_dim=num_classes,
                 dropout=dropout_gnn,
             )
         elif head == "gat":
             self.head = SimpleGAT(
                 in_dim=hidden_dim,
-                hidden_dim=hidden_dim // 4,
+                hidden_dim=gnn_hidden_dim // 4,
                 out_dim=num_classes,
                 heads=4,
                 dropout=dropout_gnn,
@@ -474,6 +476,7 @@ def build_rahgh_classifier(
     dropout_homo: float = 0.2,
     dropout_gnn: float = 0.5,
     directed: bool = False,
+    gnn_hidden_dim: Optional[int] = None,
 ) -> RAHGHClassifier:
     """
     Build an RAHGHClassifier from an old-format data dict.
@@ -490,6 +493,9 @@ def build_rahgh_classifier(
         edge_index_dict from A_list_sp
         node_type_indices from node id offsets (inferred from data)
 
+    Args:
+        gnn_hidden_dim : GNN head hidden dim (defaults to hidden_dim if None)
+
     Usage:
         model = build_rahgh_classifier(data, hidden_dim=64, num_classes=3,
                                         K=3, head='gcn')
@@ -498,18 +504,25 @@ def build_rahgh_classifier(
     node_type_dims = {k: v.shape[1] for k, v in data['X_dict'].items()}
 
     rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
-    # Build relation_info from bipartite_flags if available
-    if 'bipartite_flags' in data:
+
+    # Prefer explicit relation_info from the loader; fall back to bipartite_flags heuristic
+    if 'relation_info' in data:
+        relation_info = data['relation_info']
+    elif 'bipartite_flags' in data:
         types = list(data['X_dict'].keys())
+        target_type = data.get('target_type', types[0])
         relation_info = {}
         for i, rname in enumerate(rel_names):
             is_bip = data['bipartite_flags'][i]
             if is_bip:
-                src_type = types[0] if len(types) > 0 else 'src'
-                dst_type = types[1] if len(types) > 1 else 'dst'
+                other_type = next((t for t in types if t != target_type), types[-1])
+                # Alternate src/dst per relation to cover forward/backward pairs
+                if i % 2 == 0:
+                    src_type, dst_type = target_type, other_type
+                else:
+                    src_type, dst_type = other_type, target_type
             else:
-                src_type = data.get('target_type', types[0])
-                dst_type = src_type
+                src_type = dst_type = target_type
             relation_info[rname] = (src_type, dst_type)
     else:
         relation_info = {r: (data.get('target_type', 'node'), data.get('target_type', 'node'))
@@ -526,6 +539,7 @@ def build_rahgh_classifier(
         dropout_homo=dropout_homo,
         dropout_gnn=dropout_gnn,
         directed=directed,
+        gnn_hidden_dim=gnn_hidden_dim,
     )
 
 

@@ -84,6 +84,7 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
         data, hidden_dim=d, num_classes=d, K=params['K'],
         head=head,
         dropout_homo=params['dropout'], dropout_gnn=params['dropout'],
+        gnn_hidden_dim=params.get('hidden', d),
     ).to(device)
     model = compile_model(model)
     decoder = MLPDecoder(d).to(device)
@@ -166,6 +167,7 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5,
         data, hidden_dim=d, num_classes=d, K=K,
         head=head,
         dropout_homo=cfg['dropout'], dropout_gnn=cfg['dropout'],
+        gnn_hidden_dim=cfg.get('hidden', d),
     ).to(device)
     model = compile_model(model)
 
@@ -262,6 +264,7 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
         data, hidden_dim=d, num_classes=d, K=best_params['K'],
         head=head,
         dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
+        gnn_hidden_dim=best_params.get('hidden', d),
     ).to(device)
     model = compile_model(model)
     decoder = MLPDecoder(d).to(device)

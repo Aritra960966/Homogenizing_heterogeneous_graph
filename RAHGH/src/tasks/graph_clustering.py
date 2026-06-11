@@ -39,6 +39,7 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
         data, hidden_dim=d, num_classes=n_cl, K=best_params['K'],
         head=head,
         dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
+        gnn_hidden_dim=best_params.get('hidden', d),
     ).to(device)
 
     model.eval()
