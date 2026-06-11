@@ -13,13 +13,12 @@ from ..model.rahgh import (
 
 
 PARAM_GRID_BASE = {
-    'd'         : [64],
-    'K'         : [2, 3, 4, 5, 6],
+    'd'         : [64,128],
+    'K'         : [1,2, 3,4,5,6],
     'dropout'   : [0.3, 0.5],
-    'lr'        : [0.001, 0.005],
-    'wd'        : [1e-4, 1e-3],
-    'hidden': [64, 128],
-    'epochs'    : [500, 700, 1000],
+    'lr'        : [0.001,0.005],
+    'wd'        : [1e-3,1e-4],
+    'epochs'    : [300, 500,700],
 }
 
 PARAM_GRID_CLUSTERING = {
@@ -87,6 +86,9 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
 
     model = _build_model(data, params, out_dim=data['n_classes'], device=device, head=head)
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        opt, T_max=params['epochs'], eta_min=params['lr'] * 0.01,
+    )
     use_amp = device.type == 'cuda'
     scaler = torch.amp.GradScaler(device='cuda') if use_amp else None
 
@@ -97,7 +99,7 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=use_amp):
             logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t])
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.05)
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.step(opt)
@@ -105,6 +107,7 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
         else:
             loss.backward()
             opt.step()
+        scheduler.step()
 
         model.eval()
         with torch.no_grad():

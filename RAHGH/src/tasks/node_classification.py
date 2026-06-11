@@ -117,6 +117,9 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
     ).to(device)
     model = compile_model(model)
     opt = Adam(model.parameters(), lr=best_params['lr'], weight_decay=best_params['wd'])
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+        opt, T_max=best_params['epochs'], eta_min=best_params['lr'] * 0.01,
+    )
     scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     tr_t = torch.tensor(tr80_idx, dtype=torch.long, device=device)
@@ -130,7 +133,7 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
             logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t])
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.0)
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.step(opt)
@@ -138,6 +141,7 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         else:
             loss.backward()
             opt.step()
+        scheduler.step()
 
         with torch.no_grad():
             preds = logits[:Nt][tr_t].argmax(1).cpu().numpy()
