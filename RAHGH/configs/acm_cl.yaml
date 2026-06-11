@@ -1,7 +1,7 @@
 dataset: acm
 task: cl
 d: 64
-gcn_hidden: 64
+hidden: 64
 dropout: 0.5
 lr: 0.001
 wd: 0.0001

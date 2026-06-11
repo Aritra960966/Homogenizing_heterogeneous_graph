@@ -43,11 +43,11 @@ print(f"Test  label dist: {dict(sorted(Counter(lbl_np[te20]).items()))}")
 
 # ── Hyperparameter grid (small, targeted) ──
 GRID = [
-    {'d': 64,  'K': 1, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'gcn_hidden': 64, 'epochs': 300},
-    {'d': 64,  'K': 1, 'lr': 0.0005,'wd': 1e-4, 'dropout': 0.3, 'gcn_hidden': 64, 'epochs': 300},
-    {'d': 128, 'K': 1, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'gcn_hidden': 64, 'epochs': 300},
-    {'d': 64,  'K': 2, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'gcn_hidden': 64, 'epochs': 300},
-    {'d': 64,  'K': 3, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'gcn_hidden': 64, 'epochs': 300},
+    {'d': 64,  'K': 1, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'hidden': 64, 'epochs': 300},
+    {'d': 64,  'K': 1, 'lr': 0.0005,'wd': 1e-4, 'dropout': 0.3, 'hidden': 64, 'epochs': 300},
+    {'d': 128, 'K': 1, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'hidden': 64, 'epochs': 300},
+    {'d': 64,  'K': 2, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'hidden': 64, 'epochs': 300},
+    {'d': 64,  'K': 3, 'lr': 0.001, 'wd': 1e-4, 'dropout': 0.5, 'hidden': 64, 'epochs': 300},
 ]
 
 PATIENCE = 30
@@ -97,7 +97,7 @@ def run_fold(params, tr_idx, va_idx):
 
     model = RAHGH(
         in_dims=in_dims, d=params['d'], R=R, K=params['K'],
-        gcn_hidden=params['gcn_hidden'], out_dim=data['n_classes'],
+        hidden=params['hidden'], out_dim=data['n_classes'],
         dropout=params['dropout'],
         A_list_sp=data['A_list_sp'], N=data['N'], device=device,
     ).to(device)
@@ -151,7 +151,7 @@ def final_test(params, tr80_idx, te20_idx):
 
     model = RAHGH(
         in_dims=in_dims, d=params['d'], R=R, K=params['K'],
-        gcn_hidden=params['gcn_hidden'], out_dim=data['n_classes'],
+        hidden=params['hidden'], out_dim=data['n_classes'],
         dropout=params['dropout'],
         A_list_sp=data['A_list_sp'], N=data['N'], device=device,
     ).to(device)

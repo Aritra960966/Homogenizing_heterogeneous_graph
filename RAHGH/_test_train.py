@@ -28,7 +28,7 @@ for fold, (tr_fold, va_fold) in enumerate(skf.split(tr80, lbl_np[tr80])):
     
     model = RAHGH(
         in_dims=in_dims, d=64, R=R, K=3,
-        gcn_hidden=64,
+        hidden=64,
         out_dim=data['n_classes'],
         dropout=0.5,
         A_list_sp=data["A_list_sp"], N=data['N'], device=device,

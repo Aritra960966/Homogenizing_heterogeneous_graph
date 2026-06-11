@@ -68,7 +68,7 @@ foreach ($ds in @('dblp','acm','imdb')) {
 | dropout   | 0.3, 0.5                        |
 | lr        | 0.001, 0.005                    |
 | wd        | 1e-4, 1e-3                      |
-| gcn_hidden| 64, 128                         |
+| hidden| 64, 128                         |
 | epochs    | 100, 300, 500, 700              |
 
 Full grid: 960 combos × 5 folds = 4800 train runs per CV phase (run once, then final train/test repeated 10 seeds).

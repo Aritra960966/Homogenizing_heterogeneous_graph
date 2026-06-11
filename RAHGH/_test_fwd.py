@@ -21,7 +21,7 @@ print("Creating model...")
 t0 = time.time()
 model = RAHGH(
     in_dims=in_dims, d=64, R=R, K=3,
-    gcn_hidden=64,
+    hidden=64,
     out_dim=data["n_classes"],
     dropout=0.5,
     A_list_sp=data["A_list_sp"], N=N, device=device,

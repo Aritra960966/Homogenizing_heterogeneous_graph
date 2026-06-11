@@ -174,7 +174,7 @@ python scripts/verify_downloads.py
 ## Experiment Protocol (v3.1)
 
 1. **80/20 stratified split** of target nodes/edges
-2. **5-fold CV** on the 80% pool with **exhaustive grid search** (960 combos: d∈[64,128,256], K∈[2,3,4,5,6], dropout∈[0.3,0.5], lr∈[0.001,0.005], wd∈[1e-4,1e-3], gcn_hidden∈[64,128], epochs∈[100,300,500,700])
+2. **5-fold CV** on the 80% pool with **exhaustive grid search** (960 combos: d∈[64,128,256], K∈[2,3,4,5,6], dropout∈[0.3,0.5], lr∈[0.001,0.005], wd∈[1e-4,1e-3], hidden∈[64,128], epochs∈[100,300,500,700])
 3. **Best params** selected by mean validation Macro-F1 (NC) / AUC (LP)
 4. **Final training** on full 80% with best params
 5. **Evaluation** on held-out 20%
@@ -197,7 +197,7 @@ python scripts/verify_downloads.py
 | dropout | 0.3, 0.5 |
 | lr | 0.001, 0.005 |
 | wd | 1e-4, 1e-3 |
-| gcn_hidden | 64, 128 |
+| hidden | 64, 128 |
 | epochs | 100, 300, 500, 700 |
 
 Full grid: 960 combos × 5 folds = 4800 train runs per CV phase (run once, then final train/test repeated 10 seeds).

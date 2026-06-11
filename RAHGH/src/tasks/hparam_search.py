@@ -18,7 +18,7 @@ PARAM_GRID_BASE = {
     'dropout'   : [0.3, 0.5],
     'lr'        : [0.001, 0.005],
     'wd'        : [1e-4, 1e-3],
-    'gcn_hidden': [64, 128],
+    'hidden': [64, 128],
     'epochs'    : [500, 700, 1000],
 }
 
@@ -248,11 +248,17 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
 
 def hparam_search_nc(data, seed=42, out_dir='results/nc', head='gcn'):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    Nt = data['target_size']
-    lbl_np = data['labels'].numpy()
 
-    tr80, te20 = train_test_split(np.arange(Nt), test_size=TEST_FRAC,
-                                   random_state=seed, stratify=lbl_np)
+    if 'train_indices' in data:
+        tr80 = data['train_indices'].numpy()
+        te20 = data['test_indices'].numpy()
+        lbl_np = data['labels'].numpy()
+        print(f"  Using predefined split: {len(tr80)} train / {len(te20)} test", flush=True)
+    else:
+        Nt = data['target_size']
+        lbl_np = data['labels'].numpy()
+        tr80, te20 = train_test_split(np.arange(Nt), test_size=TEST_FRAC,
+                                       random_state=seed, stratify=lbl_np)
 
     # Prepare on-device data once before any fold
     x_dict_once = {k: v.to(device) for k, v in data['X_dict'].items()}
