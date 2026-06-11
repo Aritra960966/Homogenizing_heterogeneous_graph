@@ -7,7 +7,7 @@ from torch.optim import Adam
 from tqdm import tqdm
 
 from ..model.rahgh import (
-    build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
+    RAHGH, build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
     compile_model,
 )
 
@@ -131,23 +131,119 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
     return best_vm
 
 
+def _reconstruction_loss(model, x_dict, edge_index_dict, node_type_indices,
+                         tr_idx, device):
+    """Self-supervised reconstruction: connected nodes should have similar embeddings."""
+    Z, _ = model(x_dict, edge_index_dict, node_type_indices)
+    Z_norm = F.normalize(Z, dim=1)
+    sim = Z_norm @ Z_norm.T
+
+    loss = 0.0
+    n_rel = len(edge_index_dict)
+    for rel_name, ei in edge_index_dict.items():
+        s, t = ei[0], ei[1]
+        pos_sim = sim[s, t]
+        pos_loss = F.binary_cross_entropy_with_logits(pos_sim, torch.ones_like(pos_sim))
+        neg_src = torch.randint(0, Z.size(0), (ei.size(1),), device=device)
+        neg_dst = torch.randint(0, Z.size(0), (ei.size(1),), device=device)
+        neg_sim = sim[neg_src, neg_dst]
+        neg_loss = F.binary_cross_entropy_with_logits(neg_sim, torch.zeros_like(neg_sim))
+        loss += pos_loss + neg_loss
+    return loss / n_rel
+
+
+def _build_rahgh_for_clustering(data, params, device):
+    """Build a plain RAHGH model (no classifier head) for clustering."""
+    node_type_dims = {k: v.shape[1] for k, v in data['X_dict'].items()}
+    if 'relation_info' in data:
+        relation_info = data['relation_info']
+    elif 'bipartite_flags' in data:
+        types = list(data['X_dict'].keys())
+        target_type = data.get('target_type', types[0])
+        rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
+        relation_info = {}
+        for i, rname in enumerate(rel_names):
+            is_bip = data['bipartite_flags'][i]
+            if is_bip:
+                other_type = next((t for t in types if t != target_type), types[-1])
+                src_type, dst_type = (target_type, other_type) if i % 2 == 0 else (other_type, target_type)
+            else:
+                src_type = dst_type = target_type
+            relation_info[rname] = (src_type, dst_type)
+    else:
+        rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
+        relation_info = {r: (data.get('target_type', 'node'), data.get('target_type', 'node'))
+                         for r in rel_names}
+    model = RAHGH(
+        node_type_dims=node_type_dims,
+        relation_info=relation_info,
+        num_nodes=data['N'],
+        hidden_dim=params['d'],
+        output_dim=params['d'],
+        K=params['K'],
+        dropout=params['dropout'],
+        directed=False,
+    ).to(device)
+    return compile_model(model)
+
+
 def _run_fold_cl(data, params, tr_idx, va_idx, device, head='gcn',
                  x_dict=None, edge_index_dict=None, node_type_indices=None):
     from sklearn.cluster import KMeans
     from sklearn.metrics import normalized_mutual_info_score
+    from torch.optim import Adam
 
     Nt = data['target_size']
     n_cl = data['n_classes']
+    d = params['d']
+    seed = 0
 
-    model = _build_model(data, params, out_dim=Nt, device=device, head=head)
+    model = _build_rahgh_for_clustering(data, params, device)
+    opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
+
+    tr_t = torch.tensor(tr_idx, dtype=torch.long, device=device)
+    cl_loss_type = params.get('cl_loss', 'reconstruction')
+
+    model.train()
+    for ep in range(1, min(params['epochs'], 200) + 1):
+        opt.zero_grad()
+        if cl_loss_type == 'contrastive':
+            loss = _contrastive_loss(model, x_dict, edge_index_dict,
+                                     node_type_indices, tr_t, device,
+                                     temp=params.get('cl_temp', 0.5))
+        else:
+            loss = _reconstruction_loss(model, x_dict, edge_index_dict,
+                                        node_type_indices, tr_idx, device)
+        loss.backward()
+        opt.step()
+
     model.eval()
     with torch.no_grad():
-        emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
-    emb_np = emb_v[:Nt][va_idx].cpu().numpy()
-    pred = KMeans(n_clusters=n_cl, n_init=10, random_state=0).fit_predict(emb_np)
+        Z, _ = model(x_dict, edge_index_dict, node_type_indices)
+    emb_np = Z[:Nt][va_idx].cpu().numpy()
+    pred = KMeans(n_clusters=n_cl, n_init=10, random_state=seed).fit_predict(emb_np)
     nmi = normalized_mutual_info_score(data['labels'][va_idx].numpy(), pred)
     del model
     return nmi
+
+
+def _contrastive_loss(model, x_dict, edge_index_dict, node_type_indices,
+                      tr_idx, device, temp=0.5):
+    """InfoNCE contrastive loss on training nodes only."""
+    Z, _ = model(x_dict, edge_index_dict, node_type_indices)
+    Z_tr = Z[tr_idx]
+    Z_norm = F.normalize(Z_tr, dim=1)
+    sim = Z_norm @ Z_norm.T / temp  # (B, B)
+
+    loss = 0.0
+    n_rel = len(edge_index_dict)
+    for rel_name, ei in edge_index_dict.items():
+        mask = torch.isin(ei[0], tr_idx) & torch.isin(ei[1], tr_idx)
+        local_s = torch.searchsorted(tr_idx, ei[0][mask]).clamp(0, len(tr_idx)-1)
+        local_t = torch.searchsorted(tr_idx, ei[1][mask]).clamp(0, len(tr_idx)-1)
+        pos_logits = sim[local_s, local_t]
+        loss += -pos_logits.mean()
+    return loss / n_rel
 
 
 def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20,

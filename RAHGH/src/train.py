@@ -10,7 +10,7 @@ from .tasks.hparam_search       import (hparam_search_nc, hparam_search_lp,
                                          hparam_search_cl, hparam_search_rec)
 from .tasks.node_classification import run_final_nc
 from .tasks.link_prediction     import run_final_lp
-from .tasks.graph_clustering    import run_final_clustering
+from .tasks.node_clustering     import run_final_clustering
 from .tasks.recommendation      import run_final_recommendation
 
 LOADERS  = {'dblp': load_dblp, 'acm': load_acm, 'imdb': load_imdb}
