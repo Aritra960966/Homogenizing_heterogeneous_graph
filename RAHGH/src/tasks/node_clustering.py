@@ -9,7 +9,9 @@ from torch.optim      import Adam
 
 from ..model.rahgh import (
     RAHGH, build_edge_index_dict, build_node_type_indices, compile_model,
+    build_homo_adjacency,
 )
+from ..data.pyg_converter import homogeneous_to_pyg_data, build_cluster_dataloader
 
 
 def clustering_accuracy(y_true, y_pred):
@@ -60,40 +62,169 @@ def _build_rahgh_model(data, params, device):
 def _reconstruction_loss(model, x_dict, edge_index_dict, node_type_indices,
                          tr_idx, device):
     Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    Z_norm = F.normalize(Z, dim=1)
-    sim = Z_norm @ Z_norm.T
+    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
 
-    loss = 0.0
+    loss = torch.tensor(0.0, device=device)
     n_rel = len(edge_index_dict)
+    
     for rel_name, ei in edge_index_dict.items():
         s, t = ei[0], ei[1]
-        pos_sim = sim[s, t]
+
+        mask = torch.isin(s, tr_t)
+        s_tr, t_tr = s[mask], t[mask]
+        if s_tr.numel() == 0:
+            continue
+
+        temperature = Z.size(1) ** 0.5
+        pos_sim = (Z[s_tr] * Z[t_tr]).sum(dim=1) / temperature
         pos_loss = F.binary_cross_entropy_with_logits(pos_sim, torch.ones_like(pos_sim))
-        neg_src = torch.randint(0, Z.size(0), (ei.size(1),), device=device)
-        neg_dst = torch.randint(0, Z.size(0), (ei.size(1),), device=device)
-        neg_sim = sim[neg_src, neg_dst]
+
+        t_min, t_max = ei[1].min().item(), ei[1].max().item()
+        n_neg = s_tr.size(0)
+        neg_dst = torch.randint(t_min, t_max + 1, (n_neg,), device=device)
+        
+        neg_sim = (Z[s_tr] * Z[neg_dst]).sum(dim=1) / temperature
         neg_loss = F.binary_cross_entropy_with_logits(neg_sim, torch.zeros_like(neg_sim))
-        loss += pos_loss + neg_loss
+
+        loss = loss + pos_loss + neg_loss
     return loss / n_rel
 
+def _contrastive_loss(model, x_dict, edge_index_dict, node_type_indices,
+                      tr_idx, device, temp=0.5):
+    """Triplet Margin contrastive loss adapted for heterogeneous graphs."""
+    Z, _ = model(x_dict, edge_index_dict, node_type_indices)
+    Z_norm = F.normalize(Z, dim=1)
+    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
+
+    loss = torch.tensor(0.0, device=device)
+    n_rel = len(edge_index_dict)
+    margin = 0.5
+    
+    for rel_name, ei in edge_index_dict.items():
+        s, t = ei[0], ei[1]
+        
+        mask = torch.isin(s, tr_t)
+        s_tr, t_tr = s[mask], t[mask]
+        if s_tr.numel() == 0:
+            continue
+            
+        pos_sim = (Z_norm[s_tr] * Z_norm[t_tr]).sum(dim=1)
+        
+        M = 5
+        t_min, t_max = ei[1].min().item(), ei[1].max().item()
+        neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0), M), device=device)
+        
+        s_emb = Z_norm[s_tr].unsqueeze(1)
+        neg_emb = Z_norm[neg_dst]
+        neg_sim = (s_emb * neg_emb).sum(dim=2)
+        hardest_neg_sim = neg_sim.max(dim=1)[0]
+        
+        rel_loss = F.relu(hardest_neg_sim - pos_sim + margin).mean()
+        loss = loss + rel_loss
+        
+    return loss / n_rel
 
 def _train_self_supervised(model, x_dict, edge_index_dict, node_type_indices,
                            tr_idx, params, device):
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
     n_epochs = min(params['epochs'], 300)
+    cl_loss_type = params.get('cl_loss', 'reconstruction')
 
     model.train()
     for ep in range(1, n_epochs + 1):
         opt.zero_grad()
-        loss = _reconstruction_loss(model, x_dict, edge_index_dict,
-                                    node_type_indices, tr_idx, device)
+        if cl_loss_type == 'contrastive':
+            loss = _contrastive_loss(model, x_dict, edge_index_dict,
+                                     node_type_indices, tr_idx, device,
+                                     temp=params.get('cl_temp', 0.5))
+        else:
+            loss = _reconstruction_loss(model, x_dict, edge_index_dict,
+                                        node_type_indices, tr_idx, device)
         loss.backward()
         opt.step()
 
 
+def _train_self_supervised_cluster(
+    model, x_dict, edge_index_dict, node_type_indices,
+    data, params, tr80_idx, device,
+    num_parts=10, cl_loss_type='reconstruction',
+):
+    """
+    Self-supervised training using ClusterData/ClusterLoader.
+
+    One full forward pass per epoch produces Z_final on the full graph.
+    Then ClusterLoader iterates over homogeneous subgraphs and computes
+    the self-supervised loss on each subgraph's edges, using the
+    full-graph embeddings (indexed by the subgraph's original node IDs).
+
+    This combines full-graph RAHGH propagation with cluster-based
+    mini-batch loss computation. Gradients flow through the full model.
+    """
+    opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
+    n_epochs = min(params['epochs'], 100)
+
+    # Build homogeneous cluster loader (fused adjacency over all relations)
+    cl_loader = build_cluster_dataloader(
+        data, num_parts=num_parts, batch_size=1, shuffle=True,
+    )
+
+    tr_t = torch.tensor(tr80_idx, device=device) if not torch.is_tensor(tr80_idx) else tr80_idx
+
+    model.train()
+    for ep in range(1, n_epochs + 1):
+        # Full forward pass through RAHGH (one per epoch)
+        Z, alpha = model(x_dict, edge_index_dict, node_type_indices)
+        Z_norm = F.normalize(Z, dim=1) if cl_loss_type == 'contrastive' else Z
+
+        total_loss = 0.0
+        n_batches = 0
+
+        for subgraph in cl_loader:
+            orig_ids = subgraph.node_id.to(device)  # original global node IDs
+            ei_sub = subgraph.edge_index.to(device)
+            s, t = ei_sub[0], ei_sub[1]
+
+            # Keep only edges whose source is in the training set
+            train_mask = torch.isin(s, tr_t)
+            s_tr, t_tr = s[train_mask], t[train_mask]
+            if s_tr.numel() == 0:
+                continue
+
+            if cl_loss_type == 'contrastive':
+                Z_sub = Z_norm[orig_ids]
+                pos_sim = (Z_sub[s_tr] * Z_sub[t_tr]).sum(dim=1)
+                M = 5
+                t_min, t_max = ei_sub[1].min().item(), ei_sub[1].max().item()
+                neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0), M), device=device)
+                s_emb = Z_sub[s_tr].unsqueeze(1)
+                neg_emb = Z_sub[neg_dst]
+                neg_sim = (s_emb * neg_emb).sum(dim=2)
+                hardest_neg_sim = neg_sim.max(dim=1)[0]
+                rel_loss = F.relu(hardest_neg_sim - pos_sim + 0.5).mean()
+            else:
+                temperature = Z.size(1) ** 0.5
+                pos_sim = (Z_norm[s_tr] * Z_norm[t_tr]).sum(dim=1) / temperature
+                pos_loss = F.binary_cross_entropy_with_logits(pos_sim, torch.ones_like(pos_sim))
+
+                t_min, t_max = ei_sub[1].min().item(), ei_sub[1].max().item()
+                neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0),), device=device)
+                neg_sim = (Z_norm[s_tr] * Z_norm[neg_dst]).sum(dim=1) / temperature
+                neg_loss = F.binary_cross_entropy_with_logits(neg_sim, torch.zeros_like(neg_sim))
+                rel_loss = pos_loss + neg_loss
+
+            total_loss = total_loss + rel_loss
+            n_batches += 1
+
+        if n_batches > 0:
+            opt.zero_grad()
+            (total_loss / n_batches).backward()
+            opt.step()
+
+
 def run_final_clustering(data, best_params, tr80_idx, te20_idx,
                           seed=42, out_dir='results/clustering',
-                          head='gcn'):
+                          head='gcn',
+                          cluster_loader=False, num_parts=10):
     torch.manual_seed(seed); np.random.seed(seed)
     device  = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     d       = best_params['d']
@@ -109,9 +240,18 @@ def run_final_clustering(data, best_params, tr80_idx, te20_idx,
     t0 = time.time()
 
     # Self-supervised training on the 80% split
-    print(f"    Self-supervised training ...", flush=True)
-    _train_self_supervised(model, x_dict, edge_index_dict, node_type_indices,
-                           tr80_idx, best_params, device)
+    if cluster_loader:
+        print(f"    Self-supervised training (ClusterLoader, {num_parts} parts) ...", flush=True)
+        _train_self_supervised_cluster(
+            model, x_dict, edge_index_dict, node_type_indices,
+            data, best_params, tr80_idx, device,
+            num_parts=num_parts,
+            cl_loss_type=best_params.get('cl_loss', 'reconstruction'),
+        )
+    else:
+        print(f"    Self-supervised training ...", flush=True)
+        _train_self_supervised(model, x_dict, edge_index_dict, node_type_indices,
+                               tr80_idx, best_params, device)
 
     # Extract latent embeddings from RAHGH (returns Z_final, alpha)
     model.eval()

@@ -47,7 +47,7 @@ def build_homo_adjacency(
     for i, r in enumerate(relation_names):
         ei = edge_index_dict[r].to(device)
         s, t = ei[0], ei[1]
-        w = alpha[i].detach().expand(s.size(0))
+        w = alpha[i].expand(s.size(0))
         src_list.append(s);  dst_list.append(t);  w_list.append(w)
         src_list.append(t);  dst_list.append(s);  w_list.append(w)
 

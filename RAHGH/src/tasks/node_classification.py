@@ -124,10 +124,17 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
     )
     scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
-    tr_t = torch.tensor(tr80_idx, dtype=torch.long, device=device)
-    te_t = torch.tensor(te20_idx, dtype=torch.long, device=device)
+    # Further split tr80 into train (90%) and validation (10%) for early stopping
+    from sklearn.model_selection import train_test_split
+    lbl_np = data['labels'].numpy()
+    tr_idx, va_idx = train_test_split(tr80_idx, test_size=0.125,
+                                       random_state=seed, stratify=lbl_np[tr80_idx])
+    tr_t = torch.tensor(tr_idx, dtype=torch.long, device=device)
+    va_t = torch.tensor(va_idx, dtype=torch.long, device=device)
     t0 = time.time()
 
+    best_val_macro = 0.0
+    best_sd = None
     epoch_rows = []
     pbar = tqdm(range(1, best_params['epochs'] + 1), desc="Final training")
     for ep in pbar:
@@ -145,14 +152,21 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
             opt.step()
         scheduler.step()
 
+        model.eval()
         with torch.no_grad():
-            preds = logits[:Nt][tr_t].argmax(1).cpu().numpy()
+            logits_ev, _ = model(x_dict, edge_index_dict, node_type_indices)
+            preds = logits_ev[:Nt][tr_t].argmax(1).cpu().numpy()
             tr_acc = (preds == labels[tr_t].cpu().numpy()).mean()
+            _, vm, _, _ = _evaluate(logits_ev, Nt, va_t.cpu().numpy(), data['labels'])
+        if vm > best_val_macro:
+            best_val_macro = vm
+            best_sd = {k: v.clone() for k, v in model.state_dict().items()}
         epoch_rows.append({'epoch': ep, 'loss': loss.item(),
                            'train_acc': float(tr_acc)})
         if ep % 100 == 0 or ep == best_params['epochs']:
-            pbar.set_description(f"loss={loss.item():.4f}")
+            pbar.set_description(f"loss={loss.item():.4f} val_macro={vm:.4f}")
 
+    model.load_state_dict(best_sd)
     model.eval()
     with torch.no_grad():
         logits, alpha = model(x_dict, edge_index_dict, node_type_indices)

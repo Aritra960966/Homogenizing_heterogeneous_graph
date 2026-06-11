@@ -14,7 +14,7 @@ from ..model.rahgh import (
 
 PARAM_GRID_BASE = {
     'd'         : [64, 128, 256],
-    'K'         : [2, 3, 4, 5, 6],
+    'K'         : [1, 2, 3, 4],
     'dropout'   : [0.3, 0.5],
     'lr'        : [0.001, 0.005],
     'wd'        : [1e-4, 1e-3],
@@ -89,7 +89,7 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
     model = _build_model(data, params, out_dim=data['n_classes'], device=device, head=head)
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        opt, T_max=params['epochs'], eta_min=params['lr'] * 0.01,
+        opt, T_max=min(params['epochs'], 300), eta_min=params['lr'] * 0.01,
     )
     use_amp = device.type == 'cuda'
     scaler = torch.amp.GradScaler(device='cuda') if use_amp else None
@@ -133,22 +133,33 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
 
 def _reconstruction_loss(model, x_dict, edge_index_dict, node_type_indices,
                          tr_idx, device):
-    """Self-supervised reconstruction: connected nodes should have similar embeddings."""
+    """Self-supervised reconstruction for heterogeneous graphs."""
     Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    Z_norm = F.normalize(Z, dim=1)
-    sim = Z_norm @ Z_norm.T
+    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
 
-    loss = 0.0
+    loss = torch.tensor(0.0, device=device)
     n_rel = len(edge_index_dict)
+    
     for rel_name, ei in edge_index_dict.items():
         s, t = ei[0], ei[1]
-        pos_sim = sim[s, t]
+
+        mask = torch.isin(s, tr_t)
+        s_tr, t_tr = s[mask], t[mask]
+        if s_tr.numel() == 0:
+            continue
+
+        temperature = Z.size(1) ** 0.5
+        pos_sim = (Z[s_tr] * Z[t_tr]).sum(dim=1) / temperature
         pos_loss = F.binary_cross_entropy_with_logits(pos_sim, torch.ones_like(pos_sim))
-        neg_src = torch.randint(0, Z.size(0), (ei.size(1),), device=device)
-        neg_dst = torch.randint(0, Z.size(0), (ei.size(1),), device=device)
-        neg_sim = sim[neg_src, neg_dst]
+
+        t_min, t_max = ei[1].min().item(), ei[1].max().item()
+        n_neg = s_tr.size(0)
+        neg_dst = torch.randint(t_min, t_max + 1, (n_neg,), device=device)
+        
+        neg_sim = (Z[s_tr] * Z[neg_dst]).sum(dim=1) / temperature
         neg_loss = F.binary_cross_entropy_with_logits(neg_sim, torch.zeros_like(neg_sim))
-        loss += pos_loss + neg_loss
+
+        loss = loss + pos_loss + neg_loss
     return loss / n_rel
 
 
@@ -229,20 +240,37 @@ def _run_fold_cl(data, params, tr_idx, va_idx, device, head='gcn',
 
 def _contrastive_loss(model, x_dict, edge_index_dict, node_type_indices,
                       tr_idx, device, temp=0.5):
-    """InfoNCE contrastive loss on training nodes only."""
+    """Triplet Margin contrastive loss adapted for heterogeneous graphs."""
     Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    Z_tr = Z[tr_idx]
-    Z_norm = F.normalize(Z_tr, dim=1)
-    sim = Z_norm @ Z_norm.T / temp  # (B, B)
+    Z_norm = F.normalize(Z, dim=1)
+    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
 
-    loss = 0.0
+    loss = torch.tensor(0.0, device=device)
     n_rel = len(edge_index_dict)
+    margin = 0.5
+    
     for rel_name, ei in edge_index_dict.items():
-        mask = torch.isin(ei[0], tr_idx) & torch.isin(ei[1], tr_idx)
-        local_s = torch.searchsorted(tr_idx, ei[0][mask]).clamp(0, len(tr_idx)-1)
-        local_t = torch.searchsorted(tr_idx, ei[1][mask]).clamp(0, len(tr_idx)-1)
-        pos_logits = sim[local_s, local_t]
-        loss += -pos_logits.mean()
+        s, t = ei[0], ei[1]
+        
+        mask = torch.isin(s, tr_t)
+        s_tr, t_tr = s[mask], t[mask]
+        if s_tr.numel() == 0:
+            continue
+            
+        pos_sim = (Z_norm[s_tr] * Z_norm[t_tr]).sum(dim=1)
+        
+        M = 5
+        t_min, t_max = ei[1].min().item(), ei[1].max().item()
+        neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0), M), device=device)
+        
+        s_emb = Z_norm[s_tr].unsqueeze(1)
+        neg_emb = Z_norm[neg_dst]
+        neg_sim = (s_emb * neg_emb).sum(dim=2)
+        hardest_neg_sim = neg_sim.max(dim=1)[0]
+        
+        rel_loss = F.relu(hardest_neg_sim - pos_sim + margin).mean()
+        loss = loss + rel_loss
+        
     return loss / n_rel
 
 
