@@ -1,4 +1,4 @@
-import itertools, random, time, json, os, sys
+import itertools, random, time, json, os, sys, copy
 import numpy as np, torch
 from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
@@ -133,42 +133,16 @@ def _run_fold_cl(data, params, tr_idx, va_idx, device, head='gcn',
 
     Nt = data['target_size']
     n_cl = data['n_classes']
-    d = params['d']
 
-    model = _build_model(data, params, out_dim=d, device=device, head=head)
-    decoder = torch.nn.Linear(d, d).to(device)
-    opt = Adam(
-        list(model.parameters()) + list(decoder.parameters()),
-        lr=params['lr'], weight_decay=params['wd'],
-    )
-
-    tr_t = torch.tensor(tr_idx, dtype=torch.long, device=device)
-    X_cat = torch.cat(list(x_dict.values()), dim=0)[:Nt][tr_t]
-    if X_cat.shape[1] != d:
-        X_cat = X_cat[:, :d] if X_cat.shape[1] > d \
-                else F.pad(X_cat, (0, d - X_cat.shape[1]))
-
-    best_nmi = 0.0
-
-    for ep in range(1, params['epochs'] + 1):
-        model.train(); decoder.train()
-        opt.zero_grad()
-        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
-        loss = F.mse_loss(decoder(emb[:Nt][tr_t]), X_cat)
-        loss.backward()
-        opt.step()
-
-        if ep % 50 == 0 or ep == params['epochs']:
-            model.eval()
-            with torch.no_grad():
-                emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            emb_np = emb_v[:Nt][va_idx].cpu().numpy()
-            pred = KMeans(n_clusters=n_cl, n_init=10, random_state=0).fit_predict(emb_np)
-            nmi = normalized_mutual_info_score(data['labels'][va_idx].numpy(), pred)
-            best_nmi = max(best_nmi, nmi)
-
-    del model, decoder
-    return best_nmi
+    model = _build_model(data, params, out_dim=Nt, device=device, head=head)
+    model.eval()
+    with torch.no_grad():
+        emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
+    emb_np = emb_v[:Nt][va_idx].cpu().numpy()
+    pred = KMeans(n_clusters=n_cl, n_init=10, random_state=0).fit_predict(emb_np)
+    nmi = normalized_mutual_info_score(data['labels'][va_idx].numpy(), pred)
+    del model
+    return nmi
 
 
 def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20,
@@ -313,7 +287,7 @@ def hparam_search_nc(data, seed=42, out_dir='results/nc', head='gcn'):
         elapsed = time.time() - t_combo
         print(f"    fold_scores={[round(s, 4) for s in fold_scores]}")
         print(f"    mean_macro_f1={mean_vm:.4f}  [{elapsed:.0f}s]", flush=True)
-        if mean_vm > best_mean: best_mean, best_params = mean_vm, params
+        if mean_vm > best_mean: best_mean, best_params = mean_vm, copy.deepcopy(params)
 
     total_hp = time.time() - t0_hp
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
@@ -342,21 +316,32 @@ def hparam_search_cl(data, seed=42, out_dir='results/clustering', head='gcn'):
     cv_rows = []
     best_params, best_mean = None, 0.0
 
+    n_total = len(combos) * N_FOLDS
+    print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {n_total} runs", flush=True)
+    t0_hp = time.time()
     for ci, params in enumerate(combos):
+        t_combo = time.time()
+        print(f"\n  combination {ci+1} {params}", flush=True)
         fold_nmis = []
-        for fold, (tr_fold, va_fold) in enumerate(skf.split(tr80, lbl_np[tr80])):
+        fold_iter = tqdm(skf.split(tr80, lbl_np[tr80]), desc=f"    fold", total=N_FOLDS, leave=False)
+        for fold, (tr_fold, va_fold) in enumerate(fold_iter):
             nmi = _run_fold_cl(data, params, tr80[tr_fold], tr80[va_fold], device, head=head,
                                x_dict=x_dict_once, edge_index_dict=edge_index_dict_once,
                                node_type_indices=node_type_indices_once)
             fold_nmis.append(nmi)
+            fold_iter.set_postfix(nmi=f"{nmi:.4f}")
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_nmi': round(nmi, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_nmi = float(np.mean(fold_nmis))
-        if mean_nmi > best_mean: best_mean, best_params = mean_nmi, params
+        elapsed = time.time() - t_combo
+        print(f"    fold_nmis={[round(s, 4) for s in fold_nmis]}")
+        print(f"    mean_nmi={mean_nmi:.4f}  [{elapsed:.0f}s]", flush=True)
+        if mean_nmi > best_mean: best_mean, best_params = mean_nmi, copy.deepcopy(params)
 
+    total_hp = time.time() - t0_hp
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'cl', out_dir)
-    print(f"[CL hparam] best_val_nmi={best_mean:.4f}  params={best_params}")
+    print(f"[CL hparam] best_val_nmi={best_mean:.4f}  params={best_params}  total={total_hp:.0f}s", flush=True)
     return best_params, tr80, te20
 
 
@@ -391,7 +376,7 @@ def hparam_search_rec(data, target_edges, seed=42, out_dir='results/recommendati
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_recall': round(rec, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_rec = float(np.mean(fold_recs))
-        if mean_rec > best_mean: best_mean, best_params = mean_rec, params
+        if mean_rec > best_mean: best_mean, best_params = mean_rec, copy.deepcopy(params)
 
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'rec', out_dir)
@@ -430,7 +415,7 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp', head='gc
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_auc': round(auc, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_auc = float(np.mean(fold_aucs))
-        if mean_auc > best_mean: best_mean, best_params = mean_auc, params
+        if mean_auc > best_mean: best_mean, best_params = mean_auc, copy.deepcopy(params)
 
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'lp', out_dir)

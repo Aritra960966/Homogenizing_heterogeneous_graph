@@ -348,9 +348,11 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
         import csv
         from pathlib import Path
         ep_path = Path(out_dir) / f'epoch_metrics_seed{seed}.csv'
-        with open(ep_path, 'w', newline='') as f:
+        write_header = not ep_path.exists()
+        with open(ep_path, 'a', newline='') as f:
             w = csv.DictWriter(f, fieldnames=['epoch', 'loss', 'train_auc'])
-            w.writeheader()
+            if write_header:
+                w.writeheader()
             w.writerows(epoch_rows)
 
     return dict(auc=auc, ap=ap,

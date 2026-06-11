@@ -1,5 +1,6 @@
 import csv, os, json, argparse
 import numpy as np
+from tqdm import tqdm
 
 from .data.dblp_loader import load_dblp
 from .data.acm_loader  import load_acm
@@ -159,11 +160,13 @@ def run_cl(dataset_name, out_dir, head='gcn'):
                                                 head=head)
 
     per_run_rows, nmis, aris, accs = [], [], [], []
-    for seed in range(N_SEEDS):
+    seed_iter = tqdm(range(N_SEEDS), desc="Clustering seeds", leave=False)
+    for seed in seed_iter:
         r = run_final_clustering(data, best_params, tr80, te20,
                                   seed=seed, out_dir=out_dir,
                                   head=head)
         nmis.append(r['nmi']); aris.append(r['ari']); accs.append(r['acc'])
+        seed_iter.set_postfix(nmi=f"{r['nmi']:.4f}", ari=f"{r['ari']:.4f}", acc=f"{r['acc']:.4f}")
         row = {'dataset': dataset_name, 'task': 'cl', 'seed': seed,
                'nmi'     : round(r['nmi'], 4),
                'ari'     : round(r['ari'], 4),
@@ -264,5 +267,5 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     N_SEEDS = args.seeds
-    out_dir = RESULT_DIRS[args.task]
+    out_dir = os.path.join(RESULT_DIRS[args.task], args.dataset)
     TASK_FNS[args.task](args.dataset, out_dir, head=args.head)

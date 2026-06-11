@@ -157,9 +157,11 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         import csv
         from pathlib import Path
         ep_path = Path(out_dir) / f'epoch_metrics_seed{seed}.csv'
-        with open(ep_path, 'w', newline='') as f:
+        write_header = not ep_path.exists()
+        with open(ep_path, 'a', newline='') as f:
             w = csv.DictWriter(f, fieldnames=['epoch', 'loss', 'train_acc'])
-            w.writeheader()
+            if write_header:
+                w.writeheader()
             w.writerows(epoch_rows)
 
     return dict(test_acc=acc, test_macro=macro, test_micro=micro,
