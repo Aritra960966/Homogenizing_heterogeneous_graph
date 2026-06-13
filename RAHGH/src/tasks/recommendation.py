@@ -6,8 +6,7 @@ import time, os, csv
 from torch.optim import Adam
 
 from ..model.rahgh import (
-    RAHGHClassifier, build_rahgh_classifier, build_edge_index_dict,
-    build_node_type_indices,
+    build_encoder, build_edge_index_dict, build_node_type_indices,
 )
 
 
@@ -106,12 +105,7 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
     edge_index_dict = build_edge_index_dict(data, device)
     node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    model = build_rahgh_classifier(
-        data, hidden_dim=d, num_classes=d, K=best_params['K'],
-        head=head,
-        dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
-        gnn_hidden_dim=best_params.get('hidden', d),
-    ).to(device)
+    model = build_encoder(data, best_params, device)
     opt = Adam(model.parameters(), lr=best_params['lr'],
                weight_decay=best_params['wd'])
 

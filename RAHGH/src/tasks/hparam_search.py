@@ -7,9 +7,11 @@ from torch.optim import Adam
 from tqdm import tqdm
 
 from ..model.rahgh import (
-    RAHGH, build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
+    build_rahgh_classifier, build_encoder, build_classifier,
+    build_edge_index_dict, build_node_type_indices,
     compile_model,
 )
+from .node_clustering import run_fold_clustering
 
 
 PARAM_GRID_BASE = {
@@ -23,9 +25,25 @@ PARAM_GRID_BASE = {
 }
 
 PARAM_GRID_CLUSTERING = {
-    **PARAM_GRID_BASE,
-    'cl_loss' : ['reconstruction', 'contrastive'],
-    'cl_temp' : [0.1, 0.5],
+    # Embedding dim
+    'd'          : [64, 128, 256],
+    # Diffusion hops — 2 is optimal for clustering
+    'K'          : [1,2, 3],
+    # Low dropout
+    'dropout'    : [0.0, 0.1],
+    # Learning rate
+    'lr'         : [0.001, 0.005],
+    # Weight decay
+    'wd'         : [0.0, 0.0001],
+    # Epochs — d=64→500, d=256→700
+    'epochs'     : [500, 700,1000],
+    # Contrastive losses (SOTA upgrade)
+    'cl_temp'    : [0.3, 0.4, 0.5],
+    'lam_recon'  : [1.0],
+    'lam_cr'     : [0.3, 0.5, 1.0],
+    'lam_align'  : [0.3, 0.5],
+    'mask_rate'  : [0.1, 0.2],
+    'batch_size' : [512],
 }
 
 PARAM_GRID_REC = {
@@ -131,156 +149,20 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
     return best_vm
 
 
-def _reconstruction_loss(model, x_dict, edge_index_dict, node_type_indices,
-                         tr_idx, device):
-    """Self-supervised reconstruction for heterogeneous graphs."""
-    Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
-
-    loss = torch.tensor(0.0, device=device)
-    n_rel = len(edge_index_dict)
-    
-    for rel_name, ei in edge_index_dict.items():
-        s, t = ei[0], ei[1]
-
-        mask = torch.isin(s, tr_t)
-        s_tr, t_tr = s[mask], t[mask]
-        if s_tr.numel() == 0:
-            continue
-
-        temperature = Z.size(1) ** 0.5
-        pos_sim = (Z[s_tr] * Z[t_tr]).sum(dim=1) / temperature
-        pos_loss = F.binary_cross_entropy_with_logits(pos_sim, torch.ones_like(pos_sim))
-
-        t_min, t_max = ei[1].min().item(), ei[1].max().item()
-        n_neg = s_tr.size(0)
-        neg_dst = torch.randint(t_min, t_max + 1, (n_neg,), device=device)
-        
-        neg_sim = (Z[s_tr] * Z[neg_dst]).sum(dim=1) / temperature
-        neg_loss = F.binary_cross_entropy_with_logits(neg_sim, torch.zeros_like(neg_sim))
-
-        loss = loss + pos_loss + neg_loss
-    return loss / n_rel
-
-
-def _build_rahgh_for_clustering(data, params, device):
-    """Build a plain RAHGH model (no classifier head) for clustering."""
-    node_type_dims = {k: v.shape[1] for k, v in data['X_dict'].items()}
-    if 'relation_info' in data:
-        relation_info = data['relation_info']
-    elif 'bipartite_flags' in data:
-        types = list(data['X_dict'].keys())
-        target_type = data.get('target_type', types[0])
-        rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
-        relation_info = {}
-        for i, rname in enumerate(rel_names):
-            is_bip = data['bipartite_flags'][i]
-            if is_bip:
-                other_type = next((t for t in types if t != target_type), types[-1])
-                src_type, dst_type = (target_type, other_type) if i % 2 == 0 else (other_type, target_type)
-            else:
-                src_type = dst_type = target_type
-            relation_info[rname] = (src_type, dst_type)
-    else:
-        rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
-        relation_info = {r: (data.get('target_type', 'node'), data.get('target_type', 'node'))
-                         for r in rel_names}
-    model = RAHGH(
-        node_type_dims=node_type_dims,
-        relation_info=relation_info,
-        num_nodes=data['N'],
-        hidden_dim=params['d'],
-        output_dim=params['d'],
-        K=params['K'],
-        dropout=params['dropout'],
-        directed=False,
-    ).to(device)
-    return compile_model(model)
-
-
 def _run_fold_cl(data, params, tr_idx, va_idx, device, head='gcn',
                  x_dict=None, edge_index_dict=None, node_type_indices=None):
-    from sklearn.cluster import KMeans
-    from sklearn.metrics import normalized_mutual_info_score
-    from torch.optim import Adam
-
-    Nt = data['target_size']
-    n_cl = data['n_classes']
-    d = params['d']
-    seed = 0
-
-    model = _build_rahgh_for_clustering(data, params, device)
-    opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
-
-    tr_t = torch.tensor(tr_idx, dtype=torch.long, device=device)
-    cl_loss_type = params.get('cl_loss', 'reconstruction')
-
-    model.train()
-    for ep in range(1, min(params['epochs'], 200) + 1):
-        opt.zero_grad()
-        if cl_loss_type == 'contrastive':
-            loss = _contrastive_loss(model, x_dict, edge_index_dict,
-                                     node_type_indices, tr_t, device,
-                                     temp=params.get('cl_temp', 0.5))
-        else:
-            loss = _reconstruction_loss(model, x_dict, edge_index_dict,
-                                        node_type_indices, tr_idx, device)
-        loss.backward()
-        opt.step()
-
-    model.eval()
-    with torch.no_grad():
-        Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    emb_np = Z[:Nt][va_idx].cpu().numpy()
-    pred = KMeans(n_clusters=n_cl, n_init=10, random_state=seed).fit_predict(emb_np)
-    nmi = normalized_mutual_info_score(data['labels'][va_idx].numpy(), pred)
-    del model
-    return nmi
-
-
-def _contrastive_loss(model, x_dict, edge_index_dict, node_type_indices,
-                      tr_idx, device, temp=0.5):
-    """Triplet Margin contrastive loss adapted for heterogeneous graphs."""
-    Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    Z_norm = F.normalize(Z, dim=1)
-    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
-
-    loss = torch.tensor(0.0, device=device)
-    n_rel = len(edge_index_dict)
-    margin = 0.5
-    
-    for rel_name, ei in edge_index_dict.items():
-        s, t = ei[0], ei[1]
-        
-        mask = torch.isin(s, tr_t)
-        s_tr, t_tr = s[mask], t[mask]
-        if s_tr.numel() == 0:
-            continue
-            
-        pos_sim = (Z_norm[s_tr] * Z_norm[t_tr]).sum(dim=1)
-        
-        M = 5
-        t_min, t_max = ei[1].min().item(), ei[1].max().item()
-        neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0), M), device=device)
-        
-        s_emb = Z_norm[s_tr].unsqueeze(1)
-        neg_emb = Z_norm[neg_dst]
-        neg_sim = (s_emb * neg_emb).sum(dim=2)
-        hardest_neg_sim = neg_sim.max(dim=1)[0]
-        
-        rel_loss = F.relu(hardest_neg_sim - pos_sim + margin).mean()
-        loss = loss + rel_loss
-        
-    return loss / n_rel
+    """
+    Delegate to graph_clustering.run_fold_clustering.
+    Extra args (head, x_dict, etc.) are accepted for backward compatibility.
+    """
+    return run_fold_clustering(data, params, tr_idx, va_idx, device)
 
 
 def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20,
                   x_dict=None, edge_index_dict=None, node_type_indices=None):
     from .recommendation import bpr_loss, recall_at_k
 
-    d = params['d']
-
-    model = _build_model(data, params, out_dim=d, device=device, head=head)
+    model = build_encoder(data, params, device)
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
 
     all_items = np.unique(tr_edges[:, 1])
@@ -316,9 +198,8 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
                  x_dict=None, edge_index_dict=None, node_type_indices=None):
     from .link_prediction import sample_negatives, MLPDecoder
 
-    d = params['d']
-
-    model = _build_model(data, params, out_dim=d, device=device, head=head)
+    d = params['d']  # embedding dim — used ONLY by decoder, NOT by encoder
+    model = build_encoder(data, params, device)
     decoder = MLPDecoder(d).to(device)
     opt = Adam(list(model.parameters()) + list(decoder.parameters()),
                lr=params['lr'], weight_decay=params['wd'])
@@ -439,11 +320,6 @@ def hparam_search_cl(data, seed=42, out_dir='results/clustering', head='gcn'):
     tr80, te20 = train_test_split(np.arange(Nt), test_size=TEST_FRAC,
                                    random_state=seed, stratify=lbl_np)
 
-    # Prepare on-device data once before any fold
-    x_dict_once = {k: v.to(device) for k, v in data['X_dict'].items()}
-    edge_index_dict_once = build_edge_index_dict(data, device)
-    node_type_indices_once = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
-
     skf = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=seed)
     combos = _random_combos(PARAM_GRID_CLUSTERING, seed=seed)
 
@@ -460,9 +336,7 @@ def hparam_search_cl(data, seed=42, out_dir='results/clustering', head='gcn'):
         fold_nmis = []
         fold_iter = tqdm(skf.split(tr80, lbl_np[tr80]), desc=f"    fold", total=N_FOLDS, leave=False)
         for fold, (tr_fold, va_fold) in enumerate(fold_iter):
-            nmi = _run_fold_cl(data, params, tr80[tr_fold], tr80[va_fold], device, head=head,
-                               x_dict=x_dict_once, edge_index_dict=edge_index_dict_once,
-                               node_type_indices=node_type_indices_once)
+            nmi = _run_fold_cl(data, params, tr80[tr_fold], tr80[va_fold], device)
             fold_nmis.append(nmi)
             fold_iter.set_postfix(nmi=f"{nmi:.4f}")
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_nmi': round(nmi, 4),

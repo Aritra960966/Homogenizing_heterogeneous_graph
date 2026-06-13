@@ -464,6 +464,126 @@ def compile_model(model: nn.Module, verbose: bool = False) -> nn.Module:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  Shared helper: build relation_info from a data dict
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _build_relation_info(data: dict) -> dict:
+    """
+    Build relation_info dict from any data dict.
+
+    Prefers explicit data['relation_info']; falls back to heuristics
+    from bipartite_flags or homogeneous default.
+    """
+    if 'relation_info' in data:
+        return data['relation_info']
+
+    rel_names = data.get(
+        'relation_names',
+        [f'rel_{i}' for i in range(len(data['A_list_sp']))])
+
+    if 'bipartite_flags' in data:
+        types = list(data['X_dict'].keys())
+        target_type = data.get('target_type', types[0])
+        relation_info = {}
+        for i, rname in enumerate(rel_names):
+            if data['bipartite_flags'][i]:
+                other = next((t for t in types if t != target_type), types[-1])
+                src_t, dst_t = (
+                    (target_type, other) if i % 2 == 0
+                    else (other, target_type))
+            else:
+                src_t = dst_t = target_type
+            relation_info[rname] = (src_t, dst_t)
+        return relation_info
+
+    target_type = data.get('target_type', 'node')
+    return {r: (target_type, target_type) for r in rel_names}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  build_encoder — plain RAHGH encoder (no classifier head)
+#  Use for: clustering, link prediction, recommendation
+#  Parameters: d = embedding dim only (no num_classes)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_encoder(
+    data: dict,
+    params: dict,
+    device: torch.device,
+) -> RAHGH:
+    """
+    Build plain RAHGH encoder.
+
+    Used by: clustering, link prediction, recommendation.
+
+    params must have:
+        d       → embedding dim (hidden_dim = output_dim = d)
+        K       → diffusion hops
+        dropout → dropout rate
+
+    Does NOT use:
+        num_classes  (not applicable — no classifier head)
+        n_clusters   (not applicable — clustering is downstream)
+    """
+    d = params['d']
+
+    model = RAHGH(
+        node_type_dims={k: v.shape[1] for k, v in data['X_dict'].items()},
+        relation_info=_build_relation_info(data),
+        num_nodes=data['N'],
+        hidden_dim=d,
+        output_dim=d,
+        K=params['K'],
+        dropout=params['dropout'],
+        directed=False,
+    ).to(device)
+    return compile_model(model)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  build_classifier — RAHGH + GCN/GAT head for node classification
+#  Use for: node classification ONLY
+#  num_classes is EXPLICIT — never inferred from d
+# ─────────────────────────────────────────────────────────────────────────────
+
+def build_classifier(
+    data: dict,
+    params: dict,
+    device: torch.device,
+    num_classes: int,
+    head: str = 'gcn',
+) -> RAHGHClassifier:
+    """
+    Build RAHGH + GCN/GAT head for node classification.
+    Used by: node classification ONLY.
+
+    params must have:
+        d       → embedding dim
+        K       → diffusion hops
+        dropout → dropout rate
+        hidden  → GNN head hidden dim (optional, defaults to d)
+
+    num_classes: passed EXPLICITLY — never confused with d.
+    """
+    d = params['d']
+    gnn_hidden = params.get('hidden', d)
+
+    return RAHGHClassifier(
+        node_type_dims={k: v.shape[1] for k, v in data['X_dict'].items()},
+        relation_info=_build_relation_info(data),
+        num_nodes=data['N'],
+        hidden_dim=d,
+        num_classes=num_classes,
+        K=params['K'],
+        head=head,
+        dropout_homo=params['dropout'],
+        dropout_gnn=params['dropout'],
+        directed=False,
+        gnn_hidden_dim=gnn_hidden,
+    ).to(device)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  Backward-compatible builder (bridges old data dict format to new API)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -481,9 +601,12 @@ def build_rahgh_classifier(
     """
     Build an RAHGHClassifier from an old-format data dict.
 
+    Backward-compatible wrapper around RAHGHClassifier. Prefer
+    build_classifier() or build_encoder() for new code.
+
     Old-format keys expected:
         X_dict         : {type_name: Tensor(N_t, d_t)}
-        A_list_sp      : list[scipy.sparse.csr_matrix]
+        A_list_sp      : list[sp.csr_matrix]
         relation_names : list[str]
         N              : int
         target_size    : int
@@ -492,45 +615,10 @@ def build_rahgh_classifier(
         node_type_dims  from X_dict
         edge_index_dict from A_list_sp
         node_type_indices from node id offsets (inferred from data)
-
-    Args:
-        gnn_hidden_dim : GNN head hidden dim (defaults to hidden_dim if None)
-
-    Usage:
-        model = build_rahgh_classifier(data, hidden_dim=64, num_classes=3,
-                                        K=3, head='gcn')
-        logits, alpha = model(x_dict, edge_index_dict, node_type_indices)
     """
-    node_type_dims = {k: v.shape[1] for k, v in data['X_dict'].items()}
-
-    rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
-
-    # Prefer explicit relation_info from the loader; fall back to bipartite_flags heuristic
-    if 'relation_info' in data:
-        relation_info = data['relation_info']
-    elif 'bipartite_flags' in data:
-        types = list(data['X_dict'].keys())
-        target_type = data.get('target_type', types[0])
-        relation_info = {}
-        for i, rname in enumerate(rel_names):
-            is_bip = data['bipartite_flags'][i]
-            if is_bip:
-                other_type = next((t for t in types if t != target_type), types[-1])
-                # Alternate src/dst per relation to cover forward/backward pairs
-                if i % 2 == 0:
-                    src_type, dst_type = target_type, other_type
-                else:
-                    src_type, dst_type = other_type, target_type
-            else:
-                src_type = dst_type = target_type
-            relation_info[rname] = (src_type, dst_type)
-    else:
-        relation_info = {r: (data.get('target_type', 'node'), data.get('target_type', 'node'))
-                         for r in rel_names}
-
     return RAHGHClassifier(
-        node_type_dims=node_type_dims,
-        relation_info=relation_info,
+        node_type_dims={k: v.shape[1] for k, v in data['X_dict'].items()},
+        relation_info=_build_relation_info(data),
         num_nodes=data['N'],
         hidden_dim=hidden_dim,
         num_classes=num_classes,

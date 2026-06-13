@@ -163,8 +163,7 @@ def run_cl(dataset_name, out_dir, head='gcn'):
     seed_iter = tqdm(range(N_SEEDS), desc="Clustering seeds", leave=False)
     for seed in seed_iter:
         r = run_final_clustering(data, best_params, tr80, te20,
-                                  seed=seed, out_dir=out_dir,
-                                  head=head)
+                                  seed=seed, out_dir=out_dir)
         nmis.append(r['nmi']); aris.append(r['ari']); accs.append(r['acc'])
         seed_iter.set_postfix(nmi=f"{r['nmi']:.4f}", ari=f"{r['ari']:.4f}", acc=f"{r['acc']:.4f}")
         row = {'dataset': dataset_name, 'task': 'cl', 'seed': seed,

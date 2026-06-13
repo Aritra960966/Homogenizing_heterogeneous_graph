@@ -9,8 +9,7 @@ import time, os
 from tqdm import tqdm
 
 from ..model.rahgh import (
-    RAHGHClassifier, compile_model,
-    build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
+    build_encoder, build_edge_index_dict, build_node_type_indices,
 )
 
 
@@ -80,13 +79,7 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,
     edge_index_dict = build_edge_index_dict(data, device)
     node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    model = build_rahgh_classifier(
-        data, hidden_dim=d, num_classes=d, K=params['K'],
-        head=head,
-        dropout_homo=params['dropout'], dropout_gnn=params['dropout'],
-        gnn_hidden_dim=params.get('hidden', d),
-    ).to(device)
-    model = compile_model(model)
+    model = build_encoder(data, params, device)
     decoder = MLPDecoder(d).to(device)
 
     opt = Adam(list(model.parameters()) + list(decoder.parameters()),
@@ -163,13 +156,7 @@ def run_single_lp(data, target_edges, K, epochs, seed, cfg, neg_ratio=5,
     edge_index_dict = build_edge_index_dict(data, device)
     node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    model = build_rahgh_classifier(
-        data, hidden_dim=d, num_classes=d, K=K,
-        head=head,
-        dropout_homo=cfg['dropout'], dropout_gnn=cfg['dropout'],
-        gnn_hidden_dim=cfg.get('hidden', d),
-    ).to(device)
-    model = compile_model(model)
+    model = build_encoder(data, cfg, device)
 
     decoder   = MLPDecoder(d).to(device)
     optimizer = Adam(
@@ -260,13 +247,7 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
     edge_index_dict = build_edge_index_dict(data, device)
     node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
-    model = build_rahgh_classifier(
-        data, hidden_dim=d, num_classes=d, K=best_params['K'],
-        head=head,
-        dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
-        gnn_hidden_dim=best_params.get('hidden', d),
-    ).to(device)
-    model = compile_model(model)
+    model = build_encoder(data, best_params, device)
     decoder = MLPDecoder(d).to(device)
     opt = Adam(list(model.parameters()) + list(decoder.parameters()),
                lr=best_params['lr'], weight_decay=best_params['wd'])

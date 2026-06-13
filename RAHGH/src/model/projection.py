@@ -24,7 +24,11 @@ class TypeSpecificProjection(nn.Module):
         super().__init__()
         self.hidden_dim = hidden_dim
         self.projections = nn.ModuleDict({
-            node_type: nn.Linear(in_dim, hidden_dim)
+            node_type: nn.Sequential(
+                nn.Linear(in_dim, hidden_dim),
+                nn.LayerNorm(hidden_dim),
+                nn.ReLU(),
+            )
             for node_type, in_dim in node_type_dims.items()
         })
 
@@ -47,11 +51,11 @@ class TypeSpecificProjection(nn.Module):
         device = next(iter(x_dict.values())).device
         # Run first projection to determine dtype (may be float16 under AMP autocast)
         first_type = next(iter(node_type_indices.keys()))
-        first_proj = torch.relu(self.projections[first_type](x_dict[first_type].to(device)))
+        first_proj = self.projections[first_type](x_dict[first_type].to(device))
         H0 = torch.zeros(N_total, self.hidden_dim, device=device, dtype=first_proj.dtype)
         H0[node_type_indices[first_type]] = first_proj
         for node_type, idx in node_type_indices.items():
             if node_type == first_type:
                 continue
-            H0[idx] = torch.relu(self.projections[node_type](x_dict[node_type].to(device)))
+            H0[idx] = self.projections[node_type](x_dict[node_type].to(device))
         return H0

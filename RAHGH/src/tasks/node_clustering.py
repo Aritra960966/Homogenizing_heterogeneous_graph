@@ -1,51 +1,86 @@
+import os, csv, time
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
-import time, os, csv
-from sklearn.cluster  import KMeans
-from sklearn.metrics  import normalized_mutual_info_score, adjusted_rand_score
-from scipy.optimize   import linear_sum_assignment
-from torch.optim      import Adam
+from torch.optim import Adam
+from sklearn.cluster import KMeans
+from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
+from sklearn.preprocessing import normalize as sk_normalize
+from sklearn.decomposition import TruncatedSVD
+from scipy.optimize import linear_sum_assignment
 
 from ..model.rahgh import (
-    RAHGH, build_edge_index_dict, build_node_type_indices, compile_model,
-    build_homo_adjacency,
+    RAHGH,
+    build_edge_index_dict,
+    build_node_type_indices,
+    compile_model,
 )
-from ..data.pyg_converter import homogeneous_to_pyg_data, build_cluster_dataloader
 
 
+# ─────────────────────────────────────────────────────────────────────
+# Metrics
+# ─────────────────────────────────────────────────────────────────────
 def clustering_accuracy(y_true, y_pred):
-    y_true = np.array(y_true, dtype=np.int64)
-    y_pred = np.array(y_pred, dtype=np.int64)
-    n_classes = max(y_true.max(), y_pred.max()) + 1
-    D = np.zeros((n_classes, n_classes), dtype=np.int64)
+    y_true = np.asarray(y_true, dtype=np.int64)
+    y_pred = np.asarray(y_pred, dtype=np.int64)
+    n      = max(y_true.max(), y_pred.max()) + 1
+    D      = np.zeros((n, n), dtype=np.int64)
     for t, p in zip(y_true, y_pred):
         D[t, p] += 1
-    row_ind, col_ind = linear_sum_assignment(-D)
-    return D[row_ind, col_ind].sum() / len(y_true)
+    r, c = linear_sum_assignment(-D)
+    return float(D[r, c].sum()) / len(y_true)
 
 
-def _build_rahgh_model(data, params, device):
+def eval_clustering(Z, y, n_clusters, n_runs=10, seed=0):
+    Z_norm = sk_normalize(Z, norm='l2')
+    nmis, aris, accs = [], [], []
+    for i in range(n_runs):
+        pred = KMeans(n_clusters=n_clusters, n_init=1,
+                      random_state=seed + i,
+                      max_iter=300).fit_predict(Z_norm)
+        nmis.append(normalized_mutual_info_score(y, pred))
+        aris.append(adjusted_rand_score(y, pred))
+        accs.append(clustering_accuracy(y, pred))
+    return dict(
+        nmi=float(np.mean(nmis)), nmi_std=float(np.std(nmis)),
+        ari=float(np.mean(aris)), ari_std=float(np.std(aris)),
+        acc=float(np.mean(accs)), acc_std=float(np.std(accs)),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Model
+# ─────────────────────────────────────────────────────────────────────
+def _build_model(data, params, device):
     node_type_dims = {k: v.shape[1] for k, v in data['X_dict'].items()}
+
     if 'relation_info' in data:
         relation_info = data['relation_info']
-    elif 'bipartite_flags' in data:
-        types = list(data['X_dict'].keys())
-        target_type = data.get('target_type', types[0])
-        rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
-        relation_info = {}
-        for i, rname in enumerate(rel_names):
-            is_bip = data['bipartite_flags'][i]
-            if is_bip:
-                other_type = next((t for t in types if t != target_type), types[-1])
-                src_type, dst_type = (target_type, other_type) if i % 2 == 0 else (other_type, target_type)
-            else:
-                src_type = dst_type = target_type
-            relation_info[rname] = (src_type, dst_type)
     else:
-        rel_names = data.get('relation_names', [f'rel_{i}' for i in range(len(data['A_list_sp']))])
-        relation_info = {r: (data.get('target_type', 'node'), data.get('target_type', 'node'))
-                         for r in rel_names}
+        rel_names = data.get('relation_names',
+                             [f'rel_{i}'
+                              for i in range(len(data['A_list_sp']))])
+        if 'bipartite_flags' in data:
+            types       = list(data['X_dict'].keys())
+            target_type = data.get('target_type', types[0])
+            relation_info = {}
+            for i, rname in enumerate(rel_names):
+                if data['bipartite_flags'][i]:
+                    other = next(
+                        (t for t in types if t != target_type), types[-1])
+                    src_t, dst_t = ((target_type, other) if i % 2 == 0
+                                    else (other, target_type))
+                else:
+                    src_t = dst_t = target_type
+                relation_info[rname] = (src_t, dst_t)
+        else:
+            relation_info = {
+                r: (data.get('target_type', 'node'),
+                    data.get('target_type', 'node'))
+                for r in rel_names
+            }
+
     model = RAHGH(
         node_type_dims=node_type_dims,
         relation_info=relation_info,
@@ -59,236 +94,210 @@ def _build_rahgh_model(data, params, device):
     return compile_model(model)
 
 
-def _reconstruction_loss(model, x_dict, edge_index_dict, node_type_indices,
-                         tr_idx, device):
-    Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
+# ─────────────────────────────────────────────────────────────────────
+# Reconstruction target
+# ─────────────────────────────────────────────────────────────────────
+def _make_target(X_primary, d, device):
+    X_np     = X_primary.cpu().numpy()
+    N, F     = X_np.shape
+    d_target = min(F, max(d * 4, 256))
 
-    loss = torch.tensor(0.0, device=device)
-    n_rel = len(edge_index_dict)
-    
-    for rel_name, ei in edge_index_dict.items():
-        s, t = ei[0], ei[1]
+    if F <= d_target:
+        return X_primary.to(device), F
 
-        mask = torch.isin(s, tr_t)
-        s_tr, t_tr = s[mask], t[mask]
-        if s_tr.numel() == 0:
-            continue
+    svd    = TruncatedSVD(n_components=d_target, random_state=0, n_iter=7)
+    X_comp = svd.fit_transform(X_np).astype(np.float32)
+    var    = svd.explained_variance_ratio_.sum()
+    print(f'    target: ({N},{F})->({N},{d_target})  var={var:.3f}')
+    return torch.from_numpy(X_comp).to(device), d_target
 
-        temperature = Z.size(1) ** 0.5
-        pos_sim = (Z[s_tr] * Z[t_tr]).sum(dim=1) / temperature
-        pos_loss = F.binary_cross_entropy_with_logits(pos_sim, torch.ones_like(pos_sim))
 
-        t_min, t_max = ei[1].min().item(), ei[1].max().item()
-        n_neg = s_tr.size(0)
-        neg_dst = torch.randint(t_min, t_max + 1, (n_neg,), device=device)
-        
-        neg_sim = (Z[s_tr] * Z[neg_dst]).sum(dim=1) / temperature
-        neg_loss = F.binary_cross_entropy_with_logits(neg_sim, torch.zeros_like(neg_sim))
+# ─────────────────────────────────────────────────────────────────────
+# Training — two losses, nothing more
+# ─────────────────────────────────────────────────────────────────────
+def _train(model, x_dict, edge_index_dict, node_type_indices,
+           data, params, device, patience=50, min_epochs=200):
+    n_epochs  = params['epochs']
+    Nt        = data['target_size']
+    d         = params['d']
+    temp      = params.get('cl_temp',   0.5)
+    mask_rate = params.get('mask_rate', 0.3)
+    lam       = params.get('lam',       0.5)
 
-        loss = loss + pos_loss + neg_loss
-    return loss / n_rel
+    X_target, d_tgt = _make_target(
+        list(x_dict.values())[0], d, device)
 
-def _contrastive_loss(model, x_dict, edge_index_dict, node_type_indices,
-                      tr_idx, device, temp=0.5):
-    """Triplet Margin contrastive loss adapted for heterogeneous graphs."""
-    Z, _ = model(x_dict, edge_index_dict, node_type_indices)
-    Z_norm = F.normalize(Z, dim=1)
-    tr_t = torch.tensor(tr_idx, device=device) if not torch.is_tensor(tr_idx) else tr_idx
+    decoder = nn.Sequential(
+        nn.Linear(d, max(d, d_tgt // 2)),
+        nn.ReLU(),
+        nn.Linear(max(d, d_tgt // 2), d_tgt),
+    ).to(device)
 
-    loss = torch.tensor(0.0, device=device)
-    n_rel = len(edge_index_dict)
-    margin = 0.5
-    
-    for rel_name, ei in edge_index_dict.items():
-        s, t = ei[0], ei[1]
-        
-        mask = torch.isin(s, tr_t)
-        s_tr, t_tr = s[mask], t[mask]
-        if s_tr.numel() == 0:
-            continue
-            
-        pos_sim = (Z_norm[s_tr] * Z_norm[t_tr]).sum(dim=1)
-        
-        M = 5
-        t_min, t_max = ei[1].min().item(), ei[1].max().item()
-        neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0), M), device=device)
-        
-        s_emb = Z_norm[s_tr].unsqueeze(1)
-        neg_emb = Z_norm[neg_dst]
-        neg_sim = (s_emb * neg_emb).sum(dim=2)
-        hardest_neg_sim = neg_sim.max(dim=1)[0]
-        
-        rel_loss = F.relu(hardest_neg_sim - pos_sim + margin).mean()
-        loss = loss + rel_loss
-        
-    return loss / n_rel
+    opt = Adam(
+        list(model.parameters()) + list(decoder.parameters()),
+        lr=params['lr'], weight_decay=params['wd'])
+    sch = torch.optim.lr_scheduler.CosineAnnealingLR(
+        opt, T_max=n_epochs, eta_min=params['lr'] * 0.01)
 
-def _train_self_supervised(model, x_dict, edge_index_dict, node_type_indices,
-                           tr_idx, params, device):
-    opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
-    n_epochs = min(params['epochs'], 300)
-    cl_loss_type = params.get('cl_loss', 'reconstruction')
+    best_loss, best_sd = float('inf'), None
+    no_improve, last_l = 0, float('inf')
 
-    model.train()
     for ep in range(1, n_epochs + 1):
+        model.train(); decoder.train()
         opt.zero_grad()
-        if cl_loss_type == 'contrastive':
-            loss = _contrastive_loss(model, x_dict, edge_index_dict,
-                                     node_type_indices, tr_idx, device,
-                                     temp=params.get('cl_temp', 0.5))
-        else:
-            loss = _reconstruction_loss(model, x_dict, edge_index_dict,
-                                        node_type_indices, tr_idx, device)
+
+        # View 1: original
+        Z1, alpha = model(x_dict, edge_index_dict, node_type_indices)
+        Z1_nt     = Z1[:Nt]
+
+        loss_recon = F.mse_loss(
+            decoder(F.normalize(Z1_nt, dim=-1)), X_target)
+
+        # View 2: masked features
+        x_aug = {
+            ntype: X * torch.bernoulli(
+                torch.full(X.shape, 1.0 - mask_rate, device=device))
+            for ntype, X in x_dict.items()
+        }
+        Z2, _ = model(x_aug, edge_index_dict, node_type_indices)
+        Z2_nt = Z2[:Nt]
+
+        # NT-Xent alignment (mini-batch)
+        B   = min(512, Nt)
+        idx = torch.randperm(Nt, device=device)[:B]
+        h1  = F.normalize(Z1_nt[idx], dim=-1)
+        h2  = F.normalize(Z2_nt[idx], dim=-1)
+        sim = torch.mm(h1, h2.t()) / temp
+        lbl = torch.arange(B, device=device)
+        loss_align = (F.cross_entropy(sim, lbl) +
+                      F.cross_entropy(sim.t(), lbl)) / 2
+
+        loss = loss_recon + lam * loss_align
+
         loss.backward()
-        opt.step()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
+        opt.step(); sch.step()
 
+        l = loss.item()
+        if l < best_loss:
+            best_loss = l
+            best_sd   = {k: v.clone()
+                         for k, v in model.state_dict().items()}
 
-def _train_self_supervised_cluster(
-    model, x_dict, edge_index_dict, node_type_indices,
-    data, params, tr80_idx, device,
-    num_parts=10, cl_loss_type='reconstruction',
-):
-    """
-    Self-supervised training using ClusterData/ClusterLoader.
-
-    One full forward pass per epoch produces Z_final on the full graph.
-    Then ClusterLoader iterates over homogeneous subgraphs and computes
-    the self-supervised loss on each subgraph's edges, using the
-    full-graph embeddings (indexed by the subgraph's original node IDs).
-
-    This combines full-graph RAHGH propagation with cluster-based
-    mini-batch loss computation. Gradients flow through the full model.
-    """
-    opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
-    n_epochs = min(params['epochs'], 100)
-
-    # Build homogeneous cluster loader (fused adjacency over all relations)
-    cl_loader = build_cluster_dataloader(
-        data, num_parts=num_parts, batch_size=1, shuffle=True,
-    )
-
-    tr_t = torch.tensor(tr80_idx, device=device) if not torch.is_tensor(tr80_idx) else tr80_idx
-
-    model.train()
-    for ep in range(1, n_epochs + 1):
-        # Full forward pass through RAHGH (one per epoch)
-        Z, alpha = model(x_dict, edge_index_dict, node_type_indices)
-        Z_norm = F.normalize(Z, dim=1) if cl_loss_type == 'contrastive' else Z
-
-        total_loss = 0.0
-        n_batches = 0
-
-        for subgraph in cl_loader:
-            orig_ids = subgraph.node_id.to(device)  # original global node IDs
-            ei_sub = subgraph.edge_index.to(device)
-            s, t = ei_sub[0], ei_sub[1]
-
-            # Keep only edges whose source is in the training set
-            train_mask = torch.isin(s, tr_t)
-            s_tr, t_tr = s[train_mask], t[train_mask]
-            if s_tr.numel() == 0:
-                continue
-
-            if cl_loss_type == 'contrastive':
-                Z_sub = Z_norm[orig_ids]
-                pos_sim = (Z_sub[s_tr] * Z_sub[t_tr]).sum(dim=1)
-                M = 5
-                t_min, t_max = ei_sub[1].min().item(), ei_sub[1].max().item()
-                neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0), M), device=device)
-                s_emb = Z_sub[s_tr].unsqueeze(1)
-                neg_emb = Z_sub[neg_dst]
-                neg_sim = (s_emb * neg_emb).sum(dim=2)
-                hardest_neg_sim = neg_sim.max(dim=1)[0]
-                rel_loss = F.relu(hardest_neg_sim - pos_sim + 0.5).mean()
+        if ep % 10 == 0:
+            if (last_l - l) < 1e-5 and ep >= min_epochs:
+                no_improve += 1
             else:
-                temperature = Z.size(1) ** 0.5
-                pos_sim = (Z_norm[s_tr] * Z_norm[t_tr]).sum(dim=1) / temperature
-                pos_loss = F.binary_cross_entropy_with_logits(pos_sim, torch.ones_like(pos_sim))
+                no_improve = 0
+            last_l = l
+            if no_improve >= patience:
+                print(f'    early stop ep={ep}  loss={l:.4f}',
+                      flush=True)
+                break
 
-                t_min, t_max = ei_sub[1].min().item(), ei_sub[1].max().item()
-                neg_dst = torch.randint(t_min, t_max + 1, (s_tr.size(0),), device=device)
-                neg_sim = (Z_norm[s_tr] * Z_norm[neg_dst]).sum(dim=1) / temperature
-                neg_loss = F.binary_cross_entropy_with_logits(neg_sim, torch.zeros_like(neg_sim))
-                rel_loss = pos_loss + neg_loss
+        if ep % 100 == 0 or ep == 1:
+            print(f'    ep={ep:4d}/{n_epochs}  '
+                  f'loss={l:.4f}  '
+                  f'recon={loss_recon.item():.4f}  '
+                  f'align={loss_align.item():.4f}',
+                  flush=True)
 
-            total_loss = total_loss + rel_loss
-            n_batches += 1
-
-        if n_batches > 0:
-            opt.zero_grad()
-            (total_loss / n_batches).backward()
-            opt.step()
+    model.load_state_dict(best_sd)
+    return model, alpha
 
 
-def run_final_clustering(data, best_params, tr80_idx, te20_idx,
-                          seed=42, out_dir='results/clustering',
-                          head='gcn',
-                          cluster_loader=False, num_parts=10):
+# ─────────────────────────────────────────────────────────────────────
+# Inference
+# ─────────────────────────────────────────────────────────────────────
+@torch.no_grad()
+def _embed(model, x_dict, edge_index_dict, node_type_indices, Nt):
+    model.eval()
+    Z, alpha = model(x_dict, edge_index_dict, node_type_indices)
+    return Z[:Nt].cpu().numpy(), alpha
+
+
+# ─────────────────────────────────────────────────────────────────────
+# CV fold
+# ─────────────────────────────────────────────────────────────────────
+def run_fold_clustering(data, params, tr_idx, va_idx, device):
+    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
+    ei     = build_edge_index_dict(data, device)
+    nti    = {k: v.to(device)
+              for k, v in build_node_type_indices(data).items()}
+
+    model = _build_model(data, params, device)
+    model, _ = _train(model, x_dict, ei, nti, data, params, device,
+                      patience=25, min_epochs=100)
+
+    Z_np, _ = _embed(model, x_dict, ei, nti, data['target_size'])
+    y_np    = data['labels'].numpy()
+
+    pred = KMeans(n_clusters=data['n_classes'], n_init=5,
+                  random_state=0).fit_predict(
+        sk_normalize(Z_np, norm='l2'))
+    nmi = normalized_mutual_info_score(y_np, pred)
+
+    del model; torch.cuda.empty_cache()
+    return nmi
+
+
+# ─────────────────────────────────────────────────────────────────────
+# Final run
+# ─────────────────────────────────────────────────────────────────────
+def run_final_clustering(data, best_params, tr80_idx=None,
+                          te20_idx=None, seed=42,
+                          out_dir='results/clustering',
+                          sdcn_iters=0, head=None):
     torch.manual_seed(seed); np.random.seed(seed)
-    device  = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    d       = best_params['d']
-    Nt      = data['target_size']
-    n_cl    = data['n_classes']
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    Nt         = data['target_size']
+    n_clusters = data['n_classes']
+    y_all      = data['labels'].numpy()
 
     x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
-    edge_index_dict = build_edge_index_dict(data, device)
-    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
+    ei     = build_edge_index_dict(data, device)
+    nti    = {k: v.to(device)
+              for k, v in build_node_type_indices(data).items()}
 
-    model = _build_rahgh_model(data, best_params, device)
+    t0    = time.time()
+    model = _build_model(data, best_params, device)
+    model, alpha = _train(model, x_dict, ei, nti, data,
+                          best_params, device,
+                          patience=80, min_epochs=200)
 
-    t0 = time.time()
+    Z_np, alpha = _embed(model, x_dict, ei, nti, Nt)
+    res         = eval_clustering(Z_np, y_all, n_clusters,
+                                  n_runs=10, seed=seed)
 
-    # Self-supervised training on the 80% split
-    if cluster_loader:
-        print(f"    Self-supervised training (ClusterLoader, {num_parts} parts) ...", flush=True)
-        _train_self_supervised_cluster(
-            model, x_dict, edge_index_dict, node_type_indices,
-            data, best_params, tr80_idx, device,
-            num_parts=num_parts,
-            cl_loss_type=best_params.get('cl_loss', 'reconstruction'),
-        )
-    else:
-        print(f"    Self-supervised training ...", flush=True)
-        _train_self_supervised(model, x_dict, edge_index_dict, node_type_indices,
-                               tr80_idx, best_params, device)
+    print(f'\n  [CL seed={seed}]  '
+          f'NMI={res["nmi"]:.4f}+-{res["nmi_std"]:.4f}  '
+          f'ARI={res["ari"]:.4f}  '
+          f'ACC={res["acc"]:.4f}  '
+          f'time={time.time() - t0:.1f}s')
 
-    # Extract latent embeddings from RAHGH (returns Z_final, alpha)
-    model.eval()
-    with torch.no_grad():
-        Z, alpha = model(x_dict, edge_index_dict, node_type_indices)
-    emb_np = Z[:Nt][te20_idx].cpu().numpy()
-    y      = data['labels'][te20_idx].numpy()
-
-    print(f"    Running KMeans (n_clusters={n_cl}, n_init=20) on {len(emb_np)} test nodes...", flush=True)
-    km   = KMeans(n_clusters=n_cl, n_init=20, random_state=seed)
-    pred = km.fit_predict(emb_np)
-    nmi  = normalized_mutual_info_score(y, pred)
-    ari  = adjusted_rand_score(y, pred)
-    acc  = clustering_accuracy(y, pred)
-
-    if out_dir is not None:
+    if out_dir:
         os.makedirs(out_dir, exist_ok=True)
+        alpha_np  = alpha.detach().cpu().numpy()
+        rel_names = [n.replace('\u2192', '->')
+                     for n in data.get(
+                         'relation_names',
+                         [f'rel_{i}' for i in range(len(alpha_np))])]
+        _save_alpha(alpha_np, rel_names, seed,
+                    os.path.join(out_dir, 'alpha_weights.csv'))
 
-    alpha_np = alpha.detach().cpu().numpy()
-    alpha_row = {'seed': seed}
-    for i, rname in enumerate(model.relation_names):
-        alpha_row[f'alpha_{rname}'] = round(float(alpha_np[i]), 6)
-    alpha_path = os.path.join(out_dir, 'alpha_weights.csv')
-    file_exists = os.path.exists(alpha_path)
-    with open(alpha_path, 'a', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=alpha_row.keys())
-        if not file_exists:
-            w.writeheader()
-        w.writerow(alpha_row)
-
-    return dict(nmi=nmi, ari=ari, acc=acc,
-                alpha=alpha_np,
+    return dict(nmi=res['nmi'], nmi_std=res['nmi_std'],
+                ari=res['ari'], acc=res['acc'],
+                alpha=alpha.detach().cpu().numpy(),
                 time_sec=time.time() - t0)
 
 
-def _write_csv(rows, path):
-    if not rows: return
-    with open(path, 'w', newline='') as f:
-        w = csv.DictWriter(f, fieldnames=rows[0].keys())
-        w.writeheader(); w.writerows(rows)
+def _save_alpha(alpha_np, rel_names, seed, path):
+    row = {'seed': seed}
+    row.update({f'alpha_{n}': round(float(v), 6)
+                for n, v in zip(rel_names, alpha_np)})
+    exists = os.path.exists(path)
+    with open(path, 'a', newline='', encoding='utf-8') as f:
+        w = csv.DictWriter(f, fieldnames=row.keys())
+        if not exists: w.writeheader()
+        w.writerow(row)
