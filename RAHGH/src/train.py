@@ -15,6 +15,7 @@ from .tasks.recommendation      import run_final_recommendation
 
 LOADERS  = {'dblp': load_dblp, 'acm': load_acm, 'imdb': load_imdb}
 N_SEEDS  = 10
+SEED_LIST = [42 + 42 * i for i in range(N_SEEDS)]  # [42, 84, 126, ...]
 
 TARGET_REL_IDX = {'dblp': 0, 'acm': 0, 'imdb': 2}
 
@@ -69,7 +70,7 @@ def run_nc(dataset_name, out_dir, head='gcn'):
                                                 head=head)
 
     per_run_rows, macros, micros, accs, aucs = [], [], [], [], []
-    for seed in range(N_SEEDS):
+    for seed in SEED_LIST:
         r = run_final_nc(data, best_params, tr80, te20, seed=seed,
                          out_dir=out_dir, head=head)
         macros.append(r['test_macro'])
@@ -122,7 +123,7 @@ def run_lp(dataset_name, out_dir, head='gcn'):
         data, target_edges, seed=42, out_dir=out_dir, head=head)
 
     per_run_rows, aucs, aps = [], [], []
-    for seed in range(N_SEEDS):
+    for seed in SEED_LIST:
         r = run_final_lp(data, best_params, tr80_edges, te20_edges, seed=seed,
                          out_dir=out_dir, head=head)
         aucs.append(r['auc']); aps.append(r['ap'])
@@ -160,7 +161,7 @@ def run_cl(dataset_name, out_dir, head='gcn'):
                                                 head=head)
 
     per_run_rows, nmis, aris, accs = [], [], [], []
-    seed_iter = tqdm(range(N_SEEDS), desc="Clustering seeds", leave=False)
+    seed_iter = tqdm(SEED_LIST, desc="Clustering seeds", leave=False)
     for seed in seed_iter:
         r = run_final_clustering(data, best_params, tr80, te20,
                                   seed=seed, out_dir=out_dir)
@@ -211,7 +212,7 @@ def run_rec(dataset_name, out_dir, head='gcn', K_list=(10, 20, 50)):
     metric_vals  = {f'{m}@{K}': [] for K in K_list
                     for m in ['recall','ndcg','hit','precision','mrr']}
 
-    for seed in range(N_SEEDS):
+    for seed in SEED_LIST:
         r = run_final_recommendation(
             data, best_params, tr80_edges, te20_edges,
             target_relation_idx=TARGET_REL_IDX[dataset_name],

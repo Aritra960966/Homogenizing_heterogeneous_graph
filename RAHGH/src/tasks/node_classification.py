@@ -43,7 +43,8 @@ def run_single_nc(data, K, epochs, seed, cfg, head='gcn'):
     model = build_rahgh_classifier(
         data, hidden_dim=d, num_classes=data['n_classes'], K=K,
         head=head,
-        dropout_homo=cfg['dropout'], dropout_gnn=cfg['dropout'],
+        dropout_homo=cfg['dropout'],
+        dropout_gnn=cfg.get('dropout_gnn', cfg['dropout']),
         gnn_hidden_dim=cfg.get('hidden', d),
     ).to(device)
     model = compile_model(model)
@@ -68,13 +69,16 @@ def run_single_nc(data, K, epochs, seed, cfg, head='gcn'):
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
             logits, a = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t])
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.1)
         if scaler is not None:
             scaler.scale(loss).backward()
+            scaler.unscale_(opt)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(opt)
             scaler.update()
         else:
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             opt.step()
 
         model.eval()
@@ -114,7 +118,8 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
     model = build_rahgh_classifier(
         data, hidden_dim=d, num_classes=data['n_classes'],
         K=best_params['K'], head=head,
-        dropout_homo=best_params['dropout'], dropout_gnn=best_params['dropout'],
+        dropout_homo=best_params['dropout'],
+        dropout_gnn=best_params.get('dropout_gnn', best_params['dropout']),
         gnn_hidden_dim=best_params.get('hidden', d),
     ).to(device)
     model = compile_model(model)
@@ -142,13 +147,16 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
             logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.0)
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.1)
         if scaler is not None:
             scaler.scale(loss).backward()
+            scaler.unscale_(opt)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(opt)
             scaler.update()
         else:
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             opt.step()
         scheduler.step()
 

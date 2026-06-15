@@ -15,13 +15,14 @@ from .node_clustering import run_fold_clustering
 
 
 PARAM_GRID_BASE = {
-    'd'         : [64, 128, 256],
-    'K'         : [1, 2, 3, 4],
-    'dropout'   : [0.3, 0.5],
-    'lr'        : [0.001, 0.005],
-    'wd'        : [1e-4, 1e-3],
-    'epochs'    : [100, 300, 500, 700],
-    'hidden'    : [64, 128],
+    'd'           : [64, 128, 256],
+    'K'           : [1, 2, 3, 4],
+    'dropout'     : [0.3, 0.5],
+    'dropout_gnn' : [0.3, 0.5, 0.7],
+    'lr'          : [0.001, 0.005],
+    'wd'          : [1e-4, 1e-3],
+    'epochs'      : [100, 300, 500, 700],
+    'hidden'      : [64, 128],
 }
 
 PARAM_GRID_CLUSTERING = {
@@ -91,7 +92,8 @@ def _build_model(data, params, out_dim, device, head='gcn'):
     model = build_rahgh_classifier(
         data, hidden_dim=params['d'], num_classes=out_dim,
         K=params['K'], head=head,
-        dropout_homo=params['dropout'], dropout_gnn=params['dropout'],
+        dropout_homo=params['dropout'],
+        dropout_gnn=params.get('dropout_gnn', params['dropout']),
         gnn_hidden_dim=params.get('hidden', params['d']),
     ).to(device)
     return compile_model(model)
@@ -119,13 +121,16 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=use_amp):
             logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t])
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.1)
         if scaler is not None:
             scaler.scale(loss).backward()
+            scaler.unscale_(opt)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             scaler.step(opt)
             scaler.update()
         else:
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             opt.step()
         scheduler.step()
 

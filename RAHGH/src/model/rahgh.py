@@ -225,6 +225,11 @@ class SimpleGCN(nn.Module):
     Matches the SimpleGCN from the IMDB baseline code:  D^{-1} A row
     normalisation applied before each linear layer.
 
+    Row norm (D^{-1} A) is preferred over symmetric norm in the GCN head
+    because the RAHGH homogenizer has already applied symmetric-diffusion
+    smoothing; the head only needs to propagate once more without altering
+    the magnitude scaling that row norm preserves.
+
     Args:
         in_dim     : int    input dim  = output_dim of RAHGH
         hidden_dim : int    GCN hidden dim
