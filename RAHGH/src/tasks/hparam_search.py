@@ -3,11 +3,11 @@ import numpy as np, torch
 from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch.optim import AdamW
 from tqdm import tqdm
 
 from ..model.rahgh import (
-    build_rahgh_classifier, build_encoder, build_classifier,
+    build_rahgh_classifier, build_encoder,
     build_edge_index_dict, build_node_type_indices,
     compile_model,
 )
@@ -15,14 +15,16 @@ from .node_clustering import run_fold_clustering
 
 
 PARAM_GRID_BASE = {
-    'd'           : [64, 128, 256],
-    'K'           : [1, 2, 3, 4],
-    'dropout'     : [0.3, 0.5],
-    'dropout_gnn' : [0.3, 0.5, 0.7],
-    'lr'          : [0.001, 0.005],
-    'wd'          : [1e-4, 1e-3],
-    'epochs'      : [100, 300, 500, 700],
-    'hidden'      : [64, 128],
+    'd'              : [64, 128, 256],
+    'K'              : [1, 2, 3, 4],
+    'dropout'        : [0.3, 0.5],
+    'dropout_gnn'    : [0.3, 0.5, 0.7],
+    'lr'             : [0.001, 0.005],
+    'wd'             : [1e-4, 1e-3],
+    'epochs'         : [100, 300, 500, 700],
+    'hidden'         : [64, 128],
+    'label_smoothing': [0.0, 0.1],
+    'warmup'         : [0, 10],
 }
 
 PARAM_GRID_CLUSTERING = {
@@ -107,10 +109,22 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
     va_t = torch.tensor(va_idx, dtype=torch.long, device=device)
 
     model = _build_model(data, params, out_dim=data['n_classes'], device=device, head=head)
-    opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        opt, T_max=min(params['epochs'], 300), eta_min=params['lr'] * 0.01,
-    )
+    opt = AdamW(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
+    warmup_epochs = params.get('warmup', 0)
+    if warmup_epochs > 0:
+        warmup_sched = torch.optim.lr_scheduler.LinearLR(
+            opt, start_factor=0.01, total_iters=warmup_epochs
+        )
+        main_sched = torch.optim.lr_scheduler.CosineAnnealingLR(
+            opt, T_max=params['epochs'], eta_min=params['lr'] * 0.01,
+        )
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            opt, schedulers=[warmup_sched, main_sched], milestones=[warmup_epochs]
+        )
+    else:
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            opt, T_max=params['epochs'], eta_min=params['lr'] * 0.01,
+        )
     use_amp = device.type == 'cuda'
     scaler = torch.amp.GradScaler(device='cuda') if use_amp else None
 
@@ -121,7 +135,8 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=use_amp):
             logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.1)
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t],
+                                    label_smoothing=params.get('label_smoothing', 0.1))
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.unscale_(opt)

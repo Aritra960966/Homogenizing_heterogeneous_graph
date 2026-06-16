@@ -546,49 +546,6 @@ def build_encoder(
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  build_classifier — RAHGH + GCN/GAT head for node classification
-#  Use for: node classification ONLY
-#  num_classes is EXPLICIT — never inferred from d
-# ─────────────────────────────────────────────────────────────────────────────
-
-def build_classifier(
-    data: dict,
-    params: dict,
-    device: torch.device,
-    num_classes: int,
-    head: str = 'gcn',
-) -> RAHGHClassifier:
-    """
-    Build RAHGH + GCN/GAT head for node classification.
-    Used by: node classification ONLY.
-
-    params must have:
-        d       → embedding dim
-        K       → diffusion hops
-        dropout → dropout rate
-        hidden  → GNN head hidden dim (optional, defaults to d)
-
-    num_classes: passed EXPLICITLY — never confused with d.
-    """
-    d = params['d']
-    gnn_hidden = params.get('hidden', d)
-
-    return RAHGHClassifier(
-        node_type_dims={k: v.shape[1] for k, v in data['X_dict'].items()},
-        relation_info=_build_relation_info(data),
-        num_nodes=data['N'],
-        hidden_dim=d,
-        num_classes=num_classes,
-        K=params['K'],
-        head=head,
-        dropout_homo=params['dropout'],
-        dropout_gnn=params['dropout'],
-        directed=False,
-        gnn_hidden_dim=gnn_hidden,
-    ).to(device)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 #  Backward-compatible builder (bridges old data dict format to new API)
 # ─────────────────────────────────────────────────────────────────────────────
 

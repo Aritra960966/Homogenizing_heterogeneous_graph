@@ -1,14 +1,14 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch.optim import Adam
+from torch.optim import AdamW
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 import time, os
 from tqdm import tqdm
 
 from ..model.rahgh import (
-    RAHGHClassifier, compile_model,
+    compile_model,
     build_rahgh_classifier, build_edge_index_dict, build_node_type_indices,
 )
 
@@ -26,80 +26,6 @@ def _evaluate(logits, target_size, idx, labels_full):
             f1_score(y, p, average='macro',  zero_division=0),
             f1_score(y, p, average='micro',  zero_division=0),
             auc)
-
-
-def run_single_nc(data, K, epochs, seed, cfg, head='gcn'):
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
-    edge_index_dict = build_edge_index_dict(data, device)
-    node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
-    labels = data['labels'].to(device)
-    Nt = data['target_size']
-    d = cfg['d']
-
-    model = build_rahgh_classifier(
-        data, hidden_dim=d, num_classes=data['n_classes'], K=K,
-        head=head,
-        dropout_homo=cfg['dropout'],
-        dropout_gnn=cfg.get('dropout_gnn', cfg['dropout']),
-        gnn_hidden_dim=cfg.get('hidden', d),
-    ).to(device)
-    model = compile_model(model)
-    opt = Adam(model.parameters(), lr=cfg['lr'], weight_decay=cfg['wd'])
-    scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
-
-    lbl_np = data['labels'].numpy()
-    tr, te = train_test_split(np.arange(Nt), test_size=0.20,
-                               random_state=seed, stratify=lbl_np)
-    tr, va = train_test_split(tr, test_size=0.10 / 0.80,
-                               random_state=seed, stratify=lbl_np[tr])
-    tr_t = torch.tensor(tr, dtype=torch.long, device=device)
-    va_t = torch.tensor(va, dtype=torch.long, device=device)
-    te_t = torch.tensor(te, dtype=torch.long, device=device)
-
-    best_val, best_alpha, best_sd = 0.0, None, None
-    t0 = time.time()
-
-    pbar = tqdm(range(1, epochs + 1), desc="Training", leave=False)
-    for ep in pbar:
-        model.train()
-        opt.zero_grad()
-        with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
-            logits, a = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.1)
-        if scaler is not None:
-            scaler.scale(loss).backward()
-            scaler.unscale_(opt)
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            scaler.step(opt)
-            scaler.update()
-        else:
-            loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
-            opt.step()
-
-        model.eval()
-        with torch.no_grad():
-            logits, a = model(x_dict, edge_index_dict, node_type_indices)
-            _, vm, _, _ = _evaluate(logits, Nt, va_t.cpu().numpy(), data['labels'])
-        pbar.set_description(f"loss={loss.item():.4f} val_macro={vm:.4f}")
-        if vm > best_val:
-            best_val = vm
-            best_alpha = a.detach().cpu().numpy().copy()
-            best_sd = {k: v.clone() for k, v in model.state_dict().items()}
-
-    model.load_state_dict(best_sd)
-    model.eval()
-    with torch.no_grad():
-        logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-        acc, macro, micro, auc = _evaluate(logits, Nt, te_t.cpu().numpy(), data['labels'])
-
-    return dict(test_acc=acc, test_macro=macro, test_micro=micro, test_auc=auc,
-                best_val_macro=best_val, alpha=best_alpha,
-                time_sec=time.time() - t0)
 
 
 def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
@@ -123,10 +49,22 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         gnn_hidden_dim=best_params.get('hidden', d),
     ).to(device)
     model = compile_model(model)
-    opt = Adam(model.parameters(), lr=best_params['lr'], weight_decay=best_params['wd'])
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        opt, T_max=best_params['epochs'], eta_min=best_params['lr'] * 0.01,
-    )
+    opt = AdamW(model.parameters(), lr=best_params['lr'], weight_decay=best_params['wd'])
+    warmup_epochs = best_params.get('warmup', 0)
+    if warmup_epochs > 0:
+        warmup_sched = torch.optim.lr_scheduler.LinearLR(
+            opt, start_factor=0.01, total_iters=warmup_epochs
+        )
+        main_sched = torch.optim.lr_scheduler.CosineAnnealingLR(
+            opt, T_max=best_params['epochs'], eta_min=best_params['lr'] * 0.01,
+        )
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            opt, schedulers=[warmup_sched, main_sched], milestones=[warmup_epochs]
+        )
+    else:
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            opt, T_max=best_params['epochs'], eta_min=best_params['lr'] * 0.01,
+        )
     scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     # Further split tr80 into train (90%) and validation (10%) for early stopping
@@ -147,7 +85,8 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         opt.zero_grad()
         with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
             logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t], label_smoothing=0.1)
+            loss = F.cross_entropy(logits[:Nt][tr_t], labels[tr_t],
+                                    label_smoothing=best_params.get('label_smoothing', 0.1))
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
