@@ -4,8 +4,9 @@ import numpy as np
 import torch
 import scipy.sparse as sp
 
-from torch_geometric.data import Data
-from torch_geometric.loader import ClusterData, ClusterLoader
+# Lazy imports: torch_geometric is an optional dependency used only
+# by functions that explicitly call PyG routines.
+# Import is done inside each function that needs it.
 
 
 def to_pyg_data(
@@ -13,7 +14,7 @@ def to_pyg_data(
     relation_name: Optional[str] = None,
     relation_idx: Optional[int] = None,
     include_all_node_types: bool = True,
-) -> Data:
+) -> "Data":
     """
     Convert an RAHGH data dict to a PyG ``Data`` object.
 
@@ -37,6 +38,7 @@ def to_pyg_data(
     Returns:
         ``Data(x, edge_index, y, …)``
     """
+    from torch_geometric.data import Data
     N = data_dict['N']
     device = torch.device('cpu')
 
@@ -125,7 +127,7 @@ def to_pyg_data(
 def to_pyg_data_list(
     data_dict: dict,
     include_all_node_types: bool = True,
-) -> List[Tuple[str, Data]]:
+) -> List[Tuple[str, "Data"]]:
     """
     Convert each relation in the RAHGH data dict to a separate PyG ``Data``.
 
@@ -157,7 +159,7 @@ def build_cluster_dataloader(
     shuffle: bool = True,
     relation_idx: Optional[int] = None,
     **cluster_kwargs,
-) -> ClusterLoader:
+) -> "ClusterLoader":
     """
     Build a ``ClusterLoader`` from the RAHGH data dict.
 
@@ -180,6 +182,7 @@ def build_cluster_dataloader(
     Returns:
         ``ClusterLoader`` instance.
     """
+    from torch_geometric.loader import ClusterData, ClusterLoader
     if relation_idx is not None:
         pyg_data = to_pyg_data(data_dict, relation_idx=relation_idx)
     else:
@@ -203,7 +206,7 @@ def homogeneous_to_pyg_data(
     A_homo: torch.Tensor,
     labels: Optional[torch.Tensor] = None,
     num_nodes: Optional[int] = None,
-) -> Data:
+) -> "Data":
     """
     Wrap the RAHGH homogenised output + induced adjacency into a PyG ``Data``.
 

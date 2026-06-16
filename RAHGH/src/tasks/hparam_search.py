@@ -3,7 +3,7 @@ import numpy as np, torch
 from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
 import torch.nn.functional as F
-from torch.optim import AdamW
+from torch.optim import Adam, AdamW
 from tqdm import tqdm
 
 from ..model.rahgh import (
@@ -218,7 +218,7 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
                  x_dict=None, edge_index_dict=None, node_type_indices=None):
     from .link_prediction import sample_negatives, MLPDecoder
 
-    d = params['d']  # embedding dim — used ONLY by decoder, NOT by encoder
+    d = params['d']
     model = build_encoder(data, params, device)
     decoder = MLPDecoder(d).to(device)
     opt = Adam(list(model.parameters()) + list(decoder.parameters()),
@@ -228,7 +228,6 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
 
     all_src = np.unique(tr_edges[:, 0])
     all_dst = np.unique(tr_edges[:, 1])
-    tr_neg = sample_negatives(tr_edges, len(tr_edges) * neg_ratio, all_src, all_dst, 0)
     va_neg = sample_negatives(va_edges, len(va_edges) * neg_ratio, all_src, all_dst, 1)
 
     def tensors(pos, neg):
@@ -238,18 +237,32 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
                 torch.tensor(e[:, 1], dtype=torch.long, device=device),
                 torch.tensor(l, device=device))
 
-    tr_s, tr_d, tr_l = tensors(tr_edges, tr_neg)
     va_s, va_d, va_l = tensors(va_edges, va_neg)
+
+    tr_s = torch.tensor(tr_edges[:, 0], dtype=torch.long, device=device)
+    tr_d = torch.tensor(tr_edges[:, 1], dtype=torch.long, device=device)
+    pos_set = set(map(tuple, tr_edges))
+    rng = np.random.default_rng(0)
 
     best_auc, stall = 0.0, 0
     max_epochs = params['epochs']
-
-    for ep in range(1, max_epochs + 1):
+    pbar = tqdm(range(1, max_epochs + 1), desc="LP fold", leave=False)
+    for ep in pbar:
         model.train(); decoder.train()
         opt.zero_grad()
+
+        neg_dst = rng.choice(all_dst, size=len(tr_edges))
+        for i in range(len(neg_dst)):
+            while (int(tr_s[i]), int(neg_dst[i])) in pos_set:
+                neg_dst[i] = rng.choice(all_dst)
+        neg_dst_t = torch.tensor(neg_dst, dtype=torch.long, device=device)
+
         with torch.amp.autocast(device_type=device.type, enabled=use_amp):
             emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
-            loss = F.binary_cross_entropy_with_logits(decoder(emb, tr_s, tr_d), tr_l)
+            pos_score = decoder(emb, tr_s, tr_d)
+            neg_score = decoder(emb, tr_s, neg_dst_t)
+            loss = -F.logsigmoid(pos_score - neg_score).mean()
+
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.step(opt)
@@ -264,12 +277,15 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
             p = torch.sigmoid(decoder(emb_v, va_s, va_d)).cpu().numpy()
             auc = roc_auc_score(va_l.cpu().numpy(), p)
 
+        pbar.set_description(f"LP fold loss={loss.item():.4f} val_auc={auc:.4f}")
+
         if auc > best_auc:
             best_auc = auc
             stall = 0
         else:
             stall += 1
             if stall >= PATIENCE:
+                pbar.set_description(f"LP fold early stop @{ep}/{max_epochs} best={best_auc:.4f}")
                 break
 
     del model, decoder
@@ -433,20 +449,31 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp', head='gc
     cv_rows = []
     best_params, best_mean = None, 0.0
 
+    n_total = len(combos) * N_FOLDS
+    print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {n_total} runs", flush=True)
+    t0_hp = time.time()
     for ci, params in enumerate(combos):
+        t_combo = time.time()
+        print(f"\n  combination {ci+1}({params})", flush=True)
         fold_aucs = []
-        for fold, (tr_fold, va_fold) in enumerate(kf.split(tr80_edges)):
+        fold_iter = tqdm(kf.split(tr80_edges), desc=f"    fold", total=N_FOLDS, leave=False)
+        for fold, (tr_fold, va_fold) in enumerate(fold_iter):
             auc = _run_fold_lp(data, tr80_edges[tr_fold], tr80_edges[va_fold],
                                te20_edges, params, device, head=head,
                                x_dict=x_dict_once, edge_index_dict=edge_index_dict_once,
                                node_type_indices=node_type_indices_once)
             fold_aucs.append(auc)
+            fold_iter.set_postfix(auc=f"{auc:.4f}")
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_auc': round(auc, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
         mean_auc = float(np.mean(fold_aucs))
+        elapsed = time.time() - t_combo
+        print(f"    fold_aucs={[round(s, 4) for s in fold_aucs]}")
+        print(f"    mean_auc={mean_auc:.4f}  [{elapsed:.0f}s]", flush=True)
         if mean_auc > best_mean: best_mean, best_params = mean_auc, copy.deepcopy(params)
 
+    total_hp = time.time() - t0_hp
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'lp', out_dir)
-    print(f"[LP hparam] best_val_auc={best_mean:.4f}  params={best_params}")
+    print(f"[LP hparam] best_val_auc={best_mean:.4f}  params={best_params}  total={total_hp:.0f}s", flush=True)
     return best_params, tr80_edges, te20_edges

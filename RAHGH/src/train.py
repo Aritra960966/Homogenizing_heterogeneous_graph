@@ -5,7 +5,6 @@ from tqdm import tqdm
 from .data.dblp_loader import load_dblp
 from .data.acm_loader  import load_acm
 from .data.imdb_loader import load_imdb
-
 from .tasks.hparam_search       import (hparam_search_nc, hparam_search_lp,
                                          hparam_search_cl, hparam_search_rec)
 from .tasks.node_classification import run_final_nc
@@ -113,6 +112,7 @@ def run_nc(dataset_name, out_dir, head='gcn'):
 
 def run_lp(dataset_name, out_dir, head='gcn'):
     import scipy.sparse as sp
+    print(f"\nLoading {dataset_name} data...", flush=True)
     data   = LOADERS[dataset_name]()
     data['name'] = dataset_name
     A      = data['A_list_sp'][TARGET_REL_IDX[dataset_name]].tocoo()
@@ -122,14 +122,19 @@ def run_lp(dataset_name, out_dir, head='gcn'):
     best_params, tr80_edges, te20_edges = hparam_search_lp(
         data, target_edges, seed=42, out_dir=out_dir, head=head)
 
+    K_HITS = [1, 3, 10]
     per_run_rows, aucs, aps = [], [], []
+    hits_vals = {f'hits@{k}': [] for k in K_HITS}
     for seed in SEED_LIST:
         r = run_final_lp(data, best_params, tr80_edges, te20_edges, seed=seed,
                          out_dir=out_dir, head=head)
         aucs.append(r['auc']); aps.append(r['ap'])
+        for k in K_HITS:
+            hits_vals[f'hits@{k}'].append(r[f'hits@{k}'])
         row = {'dataset': dataset_name, 'task': 'lp', 'seed': seed,
                'test_auc': round(r['auc'], 4),
                'test_ap' : round(r['ap'],  4),
+               **{f'hits@{k}': round(r[f'hits@{k}'], 4) for k in K_HITS},
                'time_sec': round(r['time_sec'], 2),
                **{f'hp_{k}': v for k, v in best_params.items()}}
         per_run_rows.append(_flatten_result(row))
@@ -142,6 +147,8 @@ def run_lp(dataset_name, out_dir, head='gcn'):
         'auc_sd'   : round(float(np.std(aucs)),  4),
         'ap_mean'  : round(float(np.mean(aps)),  4),
         'ap_sd'    : round(float(np.std(aps)),   4),
+        **{f'hits@{k}_mean': round(float(np.mean(hits_vals[f'hits@{k}'])), 4) for k in K_HITS},
+        **{f'hits@{k}_sd'  : round(float(np.std(hits_vals[f'hits@{k}'])),  4) for k in K_HITS},
         'n_seeds'  : N_SEEDS,
         **{f'best_hp_{k}': v for k, v in best_params.items()},
     }
@@ -150,6 +157,10 @@ def run_lp(dataset_name, out_dir, head='gcn'):
     print(f"\n  {dataset_name} LP  (n={N_SEEDS} seeds)")
     print(f"  AUC : {summary['auc_mean']:.4f} ± {summary['auc_sd']:.4f}")
     print(f"  AP  : {summary['ap_mean']:.4f} ± {summary['ap_sd']:.4f}")
+    for k in K_HITS:
+        h_mean = summary[f'hits@{k}_mean']
+        h_sd   = summary[f'hits@{k}_sd']
+        print(f"  Hits@{k:<2}: {h_mean:.4f} ± {h_sd:.4f}")
 
 
 def run_cl(dataset_name, out_dir, head='gcn'):

@@ -78,8 +78,10 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
 
     best_val_macro = 0.0
     best_sd = None
+    stall = 0
+    patience = 100
     epoch_rows = []
-    pbar = tqdm(range(1, best_params['epochs'] + 1), desc="Final training")
+    pbar = tqdm(range(1, best_params['epochs'] + 1), desc="Final NC training")
     for ep in pbar:
         model.train()
         opt.zero_grad()
@@ -105,13 +107,18 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
             preds = logits_ev[:Nt][tr_t].argmax(1).cpu().numpy()
             tr_acc = (preds == labels[tr_t].cpu().numpy()).mean()
             _, vm, _, _ = _evaluate(logits_ev, Nt, va_t.cpu().numpy(), data['labels'])
+        epoch_rows.append({'epoch': ep, 'loss': loss.item(),
+                           'val_macro': float(vm)})
+        pbar.set_description(f"loss={loss.item():.4f} val_macro={vm:.4f}")
         if vm > best_val_macro:
             best_val_macro = vm
             best_sd = {k: v.clone() for k, v in model.state_dict().items()}
-        epoch_rows.append({'epoch': ep, 'loss': loss.item(),
-                           'train_acc': float(tr_acc)})
-        if ep % 100 == 0 or ep == best_params['epochs']:
-            pbar.set_description(f"loss={loss.item():.4f} val_macro={vm:.4f}")
+            stall = 0
+        else:
+            stall += 1
+            if stall >= patience:
+                pbar.set_description(f"Early stop @{ep}/{best_params['epochs']} best_val_macro={best_val_macro:.4f}")
+                break
 
     model.load_state_dict(best_sd)
     model.eval()
@@ -133,7 +140,7 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         ep_path = Path(out_dir) / f'epoch_metrics_seed{seed}.csv'
         write_header = not ep_path.exists()
         with open(ep_path, 'a', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=['epoch', 'loss', 'train_acc'])
+            w = csv.DictWriter(f, fieldnames=['epoch', 'loss', 'val_macro'])
             if write_header:
                 w.writeheader()
             w.writerows(epoch_rows)
