@@ -5,6 +5,11 @@ from tqdm import tqdm
 from .data.dblp_loader import load_dblp
 from .data.acm_loader  import load_acm
 from .data.imdb_loader import load_imdb
+<<<<<<< HEAD
+=======
+from .data.ogb_loader  import load_ogb
+
+>>>>>>> d5dfa9c1e627b71c1644d676b0a5a652c23797c9
 from .tasks.hparam_search       import (hparam_search_nc, hparam_search_lp,
                                          hparam_search_cl, hparam_search_rec)
 from .tasks.node_classification import run_final_nc
@@ -14,9 +19,16 @@ from .tasks.recommendation      import run_final_recommendation
 
 LOADERS  = {'dblp': load_dblp, 'acm': load_acm, 'imdb': load_imdb}
 N_SEEDS  = 10
-SEED_LIST = [42 + 42 * i for i in range(N_SEEDS)]  # [42, 84, 126, ...]
 
 TARGET_REL_IDX = {'dblp': 0, 'acm': 0, 'imdb': 2}
+
+
+def _get_loader(dataset_name):
+    """Get data loader for any supported dataset (HGB or OGB)."""
+    if dataset_name in LOADERS:
+        return LOADERS[dataset_name]()
+    else:
+        return load_ogb(dataset_name)
 
 RESULT_DIRS = {
     'nc'  : 'results/nc',
@@ -61,7 +73,7 @@ def _flatten_result(r):
 
 def run_nc(dataset_name, out_dir, head='gcn'):
     print(f"\nLoading {dataset_name} data...", flush=True)
-    data = LOADERS[dataset_name]()
+    data = _get_loader(dataset_name)
     data['name'] = dataset_name
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Node Classification\n{'='*60}", flush=True)
 
@@ -69,7 +81,7 @@ def run_nc(dataset_name, out_dir, head='gcn'):
                                                 head=head)
 
     per_run_rows, macros, micros, accs, aucs = [], [], [], [], []
-    for seed in SEED_LIST:
+    for seed in range(N_SEEDS):
         r = run_final_nc(data, best_params, tr80, te20, seed=seed,
                          out_dir=out_dir, head=head)
         macros.append(r['test_macro'])
@@ -112,16 +124,22 @@ def run_nc(dataset_name, out_dir, head='gcn'):
 
 def run_lp(dataset_name, out_dir, head='gcn'):
     import scipy.sparse as sp
+<<<<<<< HEAD
     print(f"\nLoading {dataset_name} data...", flush=True)
     data   = LOADERS[dataset_name]()
+=======
+    data   = _get_loader(dataset_name)
+>>>>>>> d5dfa9c1e627b71c1644d676b0a5a652c23797c9
     data['name'] = dataset_name
-    A      = data['A_list_sp'][TARGET_REL_IDX[dataset_name]].tocoo()
+    rel_idx = data.get('target_relation_idx', TARGET_REL_IDX.get(dataset_name, 0))
+    A      = data['A_list_sp'][rel_idx].tocoo()
     target_edges = np.column_stack([A.row, A.col])
 
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Link Prediction\n{'='*60}")
     best_params, tr80_edges, te20_edges = hparam_search_lp(
         data, target_edges, seed=42, out_dir=out_dir, head=head)
 
+<<<<<<< HEAD
     K_HITS = [1, 3, 10]
     per_run_rows, aucs, aps = [], [], []
     hits_vals = {f'hits@{k}': [] for k in K_HITS}
@@ -135,6 +153,17 @@ def run_lp(dataset_name, out_dir, head='gcn'):
                'test_auc': round(r['auc'], 4),
                'test_ap' : round(r['ap'],  4),
                **{f'hits@{k}': round(r[f'hits@{k}'], 4) for k in K_HITS},
+=======
+    per_run_rows, aucs, aps, f1s = [], [], [], []
+    for seed in range(N_SEEDS):
+        r = run_final_lp(data, best_params, tr80_edges, te20_edges, seed=seed,
+                         out_dir=out_dir, head=head)
+        aucs.append(r['auc']); aps.append(r['ap']); f1s.append(r['f1_macro'])
+        row = {'dataset': dataset_name, 'task': 'lp', 'seed': seed,
+               'test_auc'      : round(r['auc'], 4),
+               'test_ap'       : round(r['ap'],  4),
+               'test_macro_f1' : round(r['f1_macro'], 4),
+>>>>>>> d5dfa9c1e627b71c1644d676b0a5a652c23797c9
                'time_sec': round(r['time_sec'], 2),
                **{f'hp_{k}': v for k, v in best_params.items()}}
         per_run_rows.append(_flatten_result(row))
@@ -142,6 +171,7 @@ def run_lp(dataset_name, out_dir, head='gcn'):
     write_per_run_csv(per_run_rows, os.path.join(out_dir, 'per_run_results.csv'))
 
     summary = {
+<<<<<<< HEAD
         'dataset'  : dataset_name, 'task': 'lp',
         'auc_mean' : round(float(np.mean(aucs)), 4),
         'auc_sd'   : round(float(np.std(aucs)),  4),
@@ -150,21 +180,37 @@ def run_lp(dataset_name, out_dir, head='gcn'):
         **{f'hits@{k}_mean': round(float(np.mean(hits_vals[f'hits@{k}'])), 4) for k in K_HITS},
         **{f'hits@{k}_sd'  : round(float(np.std(hits_vals[f'hits@{k}'])),  4) for k in K_HITS},
         'n_seeds'  : N_SEEDS,
+=======
+        'dataset'      : dataset_name, 'task': 'lp',
+        'auc_mean'     : round(float(np.mean(aucs)), 4),
+        'auc_sd'       : round(float(np.std(aucs)),  4),
+        'ap_mean'      : round(float(np.mean(aps)),  4),
+        'ap_sd'        : round(float(np.std(aps)),   4),
+        'macro_f1_mean': round(float(np.mean(f1s)),  4),
+        'macro_f1_sd'  : round(float(np.std(f1s)),   4),
+        'n_seeds'      : N_SEEDS,
+>>>>>>> d5dfa9c1e627b71c1644d676b0a5a652c23797c9
         **{f'best_hp_{k}': v for k, v in best_params.items()},
     }
     write_summary_csv(summary, os.path.join(out_dir, 'summary.csv'))
 
     print(f"\n  {dataset_name} LP  (n={N_SEEDS} seeds)")
+<<<<<<< HEAD
     print(f"  AUC : {summary['auc_mean']:.4f} ± {summary['auc_sd']:.4f}")
     print(f"  AP  : {summary['ap_mean']:.4f} ± {summary['ap_sd']:.4f}")
     for k in K_HITS:
         h_mean = summary[f'hits@{k}_mean']
         h_sd   = summary[f'hits@{k}_sd']
         print(f"  Hits@{k:<2}: {h_mean:.4f} ± {h_sd:.4f}")
+=======
+    print(f"  AUC     : {summary['auc_mean']:.4f} ± {summary['auc_sd']:.4f}")
+    print(f"  AP      : {summary['ap_mean']:.4f} ± {summary['ap_sd']:.4f}")
+    print(f"  Macro-F1: {summary['macro_f1_mean']:.4f} ± {summary['macro_f1_sd']:.4f}")
+>>>>>>> d5dfa9c1e627b71c1644d676b0a5a652c23797c9
 
 
 def run_cl(dataset_name, out_dir, head='gcn'):
-    data = LOADERS[dataset_name]()
+    data = _get_loader(dataset_name)
     data['name'] = dataset_name
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Graph Clustering\n{'='*60}")
 
@@ -172,7 +218,7 @@ def run_cl(dataset_name, out_dir, head='gcn'):
                                                 head=head)
 
     per_run_rows, nmis, aris, accs = [], [], [], []
-    seed_iter = tqdm(SEED_LIST, desc="Clustering seeds", leave=False)
+    seed_iter = tqdm(range(N_SEEDS), desc="Clustering seeds", leave=False)
     for seed in seed_iter:
         r = run_final_clustering(data, best_params, tr80, te20,
                                   seed=seed, out_dir=out_dir)
@@ -209,9 +255,10 @@ def run_cl(dataset_name, out_dir, head='gcn'):
 
 def run_rec(dataset_name, out_dir, head='gcn', K_list=(10, 20, 50)):
     import scipy.sparse as sp
-    data   = LOADERS[dataset_name]()
+    data   = _get_loader(dataset_name)
     data['name'] = dataset_name
-    A      = data['A_list_sp'][TARGET_REL_IDX[dataset_name]].tocoo()
+    rel_idx = data.get('target_relation_idx', TARGET_REL_IDX.get(dataset_name, 0))
+    A      = data['A_list_sp'][rel_idx].tocoo()
     target_edges = np.column_stack([A.row, A.col])
 
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Recommendation\n{'='*60}")
@@ -223,10 +270,10 @@ def run_rec(dataset_name, out_dir, head='gcn', K_list=(10, 20, 50)):
     metric_vals  = {f'{m}@{K}': [] for K in K_list
                     for m in ['recall','ndcg','hit','precision','mrr']}
 
-    for seed in SEED_LIST:
+    for seed in range(N_SEEDS):
         r = run_final_recommendation(
             data, best_params, tr80_edges, te20_edges,
-            target_relation_idx=TARGET_REL_IDX[dataset_name],
+            target_relation_idx=rel_idx,
             K_list=K_list, seed=seed, out_dir=out_dir,
             head=head)
 
@@ -270,7 +317,8 @@ if __name__ == '__main__':
     print_env_summary()
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', choices=['dblp','acm','imdb'], required=True)
+    parser.add_argument('--dataset', required=True,
+                        help='Dataset name: dblp/acm/imdb or ogbn-mag/ogbl-biokg/...')
     parser.add_argument('--task',    choices=['nc','lp','cl','rec'], required=True)
     parser.add_argument('--seeds',   type=int, default=N_SEEDS)
     parser.add_argument('--head', choices=['gcn','gat'], default='gcn',
