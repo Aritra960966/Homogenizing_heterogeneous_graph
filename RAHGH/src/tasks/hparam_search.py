@@ -1,4 +1,4 @@
-import itertools, random, time, json, os, sys, copy
+import itertools, random, time, json, os, sys, copy, warnings
 import numpy as np, torch
 from sklearn.model_selection import StratifiedKFold, KFold, train_test_split
 from sklearn.metrics import f1_score, roc_auc_score
@@ -15,15 +15,15 @@ from .node_clustering import run_fold_clustering
 
 
 PARAM_GRID_BASE = {
-    'd'              : [64],
-    'd_prime'        : [32],
-    'K'              : [2, 3, 4, 5, 6],
-    'dropout'        : [0.5],
-    'dropout_gnn'    : [0.5],
-    'lr'             : [0.005],
+    'd'              : [32,64,128],
+    'd_prime'        : [32,64,128],
+    'K'              : [1,2, 3, 4, 5, 6],
+    'dropout'        : [0.5,0.1],
+    'dropout_gnn'    : [0.5,0.1],
+    'lr'             : [0.005,0.001],
     'wd'             : [1e-4],
-    'epochs'         : [200, 300, 400, 500, 600, 700],
-    'hidden'         : [64],
+    'epochs'         : [200, 300, 400, 500, 600, 700,1000],
+    'hidden'         : [32,64,128],
     'label_smoothing': [0.0, 0.1],
     'warmup'         : [0, 10],
 }
@@ -108,6 +108,7 @@ def _run_fold_nc(data, params, tr_idx, va_idx, device, head='gcn',
     opt = AdamW(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
     warmup_epochs = params.get('warmup', 0)
     if warmup_epochs > 0:
+        warnings.filterwarnings("ignore", category=UserWarning, module="torch.optim.lr_scheduler")
         warmup_sched = torch.optim.lr_scheduler.LinearLR(
             opt, start_factor=0.01, total_iters=warmup_epochs
         )

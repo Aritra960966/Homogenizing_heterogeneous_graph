@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from torch.optim import AdamW
 from sklearn.metrics import f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
-import time, os
+import time, os, warnings
 from tqdm import tqdm
 
 from ..model.rahgh import (
@@ -61,6 +61,7 @@ def run_final_nc(data, best_params, tr80_idx, te20_idx, seed=42,
         scheduler = torch.optim.lr_scheduler.SequentialLR(
             opt, schedulers=[warmup_sched, main_sched], milestones=[warmup_epochs]
         )
+        warnings.filterwarnings("ignore", category=UserWarning, module="torch.optim.lr_scheduler")
     else:
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             opt, T_max=best_params['epochs'], eta_min=best_params['lr'] * 0.01,
