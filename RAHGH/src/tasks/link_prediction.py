@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
-from sklearn.metrics import roc_auc_score, average_precision_score
+from sklearn.metrics import roc_auc_score, average_precision_score, f1_score
 import scipy.sparse as sp
 import time, os
 from tqdm import tqdm
@@ -372,11 +372,13 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
     with torch.no_grad():
         emb_te, alpha = model(x_dict, edge_index_dict, node_type_indices)
         p = torch.sigmoid(decoder(emb_te, te_s, te_d)).cpu().numpy()
-        auc = roc_auc_score(te_l.cpu().numpy(), p)
-        ap  = average_precision_score(te_l.cpu().numpy(), p)
+        y_true = te_l.cpu().numpy()
+        auc = roc_auc_score(y_true, p)
+        ap  = average_precision_score(y_true, p)
+        y_pred = (p >= 0.5).astype(np.int64)
+        f1_macro = f1_score(y_true, y_pred, average='macro', zero_division=0)
         all_dst_full = np.unique(np.concatenate([all_dst, te20_edges[:, 1]]))
-        hits = compute_hits_at_k(emb_te, decoder, te20_edges, all_dst_full,
-                                 n_neg=100, ks=(1, 3, 10), seed=seed, device=device)
+        hits = compute_hits_at_k(emb_te, decoder, te20_edges, all_dst_full)
 
     # Save final model
     if out_dir is not None:
@@ -398,6 +400,7 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
             w.writerows(epoch_rows)
 
     return dict(auc=auc, ap=ap, best_val_auc=best_val_auc,
+                f1_macro=f1_macro,
                 alpha=alpha.detach().cpu().numpy(),
                 time_sec=time.time() - t0, **hits)
 
