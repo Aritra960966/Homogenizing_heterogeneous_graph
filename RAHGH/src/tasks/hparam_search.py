@@ -15,31 +15,27 @@ from .node_clustering import run_fold_clustering
 
 
 PARAM_GRID_BASE = {
-    'd'              : [64, 128, 256],
-    'K'              : [1, 2, 3, 4],
-    'dropout'        : [0.3, 0.5],
-    'dropout_gnn'    : [0.3, 0.5, 0.7],
-    'lr'             : [0.001, 0.005],
-    'wd'             : [1e-4, 1e-3],
-    'epochs'         : [100, 300, 500, 700],
-    'hidden'         : [64, 128],
+    'd'              : [64],
+    'd_prime'        : [32],
+    'K'              : [2, 3, 4, 5, 6],
+    'dropout'        : [0.5],
+    'dropout_gnn'    : [0.5],
+    'lr'             : [0.005],
+    'wd'             : [1e-4],
+    'epochs'         : [200, 300, 400, 500, 600, 700],
+    'hidden'         : [64],
     'label_smoothing': [0.0, 0.1],
     'warmup'         : [0, 10],
 }
 
 PARAM_GRID_CLUSTERING = {
-    # Embedding dim
-    'd'          : [64, 128, 256],
-    # Diffusion hops — 2 is optimal for clustering
-    'K'          : [1,2, 3],
-    # Low dropout
-    'dropout'    : [0.0, 0.1],
-    # Learning rate
-    'lr'         : [0.001, 0.005],
-    # Weight decay
-    'wd'         : [0.0, 0.0001],
-    # Epochs — d=64→500, d=256→700
-    'epochs'     : [500, 700,1000],
+    'd'          : [64],
+    'd_prime'    : [32],
+    'K'          : [2, 3, 4, 5, 6],
+    'dropout'    : [0.5],
+    'lr'         : [0.005],
+    'wd'         : [1e-4],
+    'epochs'     : [200, 300, 400, 500, 600, 700],
     # Contrastive losses (SOTA upgrade)
     'cl_temp'    : [0.3, 0.4, 0.5],
     'lam_recon'  : [1.0],
@@ -96,7 +92,7 @@ def _build_model(data, params, out_dim, device, head='gcn'):
         K=params['K'], head=head,
         dropout_homo=params['dropout'],
         dropout_gnn=params.get('dropout_gnn', params['dropout']),
-        gnn_hidden_dim=params.get('hidden', params['d']),
+        gnn_hidden_dim=params.get('d_prime', params.get('hidden', params['d'])),
     ).to(device)
     return compile_model(model)
 
