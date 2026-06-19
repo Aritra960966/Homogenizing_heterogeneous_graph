@@ -34,4 +34,14 @@ rahgh_model_spec.md
 EXPERIMENT_GUIDE_v4.md
 acmdata.ipynb
 homogenizing_heterogeneous_graphs.pdf
+# OGB datasets
+RAHGH/data/raw/
+RAHGH/data/processed/
 
+# checkpoints
+*.pt
+*.pth
+*.ckpt
+
+# caches
+__pycache__/
