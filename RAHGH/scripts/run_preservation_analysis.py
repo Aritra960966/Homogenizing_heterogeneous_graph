@@ -47,6 +47,8 @@ from src.model.rahgh import (
 )
 from src.analysis.homogenization_analysis import (
     run_analysis, print_report, plot_report, latex_table,
+    export_report, save_report_csv, save_report_txt,
+    robustness_study,
 )
 
 # ── Dataset loader registry ──────────────────────────────────────────────
@@ -273,7 +275,7 @@ def run_single(
 
 
 def save_results(report: dict, out_dir: str, dataset: str, skip_plot: bool = False):
-    """Save report as JSON, figure PDF, and LaTeX table."""
+    """Save report as JSON, figure PDF, LaTeX table, CSV suite, and TXT summary."""
     os.makedirs(out_dir, exist_ok=True)
 
     # JSON report (sanitize NaNs)
@@ -289,16 +291,19 @@ def save_results(report: dict, out_dir: str, dataset: str, skip_plot: bool = Fal
         return v
 
     json_path = os.path.join(out_dir, f'{dataset}_preservation.json')
-    with open(json_path, 'w') as f:
+    with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(sanitize(report), f, indent=2)
     print(f"  Report  -> {json_path}")
 
     # LaTeX table
     latex = latex_table(report)
     tex_path = os.path.join(out_dir, f'{dataset}_latex_table.txt')
-    with open(tex_path, 'w') as f:
+    with open(tex_path, 'w', encoding='utf-8') as f:
         f.write(latex)
     print(f"  LaTeX   -> {tex_path}")
+
+    # CSV suite + TXT summary + supplementary LaTeX via export_report
+    export_report(report, output_dir=out_dir, latex=True)
 
     # Plot
     if not skip_plot:
@@ -351,7 +356,7 @@ def run_all(
 
     # Combined JSON
     comb_path = os.path.join(out_dir, 'all_preservation.json')
-    with open(comb_path, 'w') as f:
+    with open(comb_path, 'w', encoding='utf-8') as f:
         json.dump({ds: sanitize(rep) for ds, rep in all_reports.items()}, f, indent=2)
     print(f"\n  Combined -> {comb_path}")
 
