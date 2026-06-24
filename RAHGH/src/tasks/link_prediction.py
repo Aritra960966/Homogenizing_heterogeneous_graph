@@ -69,7 +69,7 @@ def _build_masked_edge_index(data, train_edges, device):
     return edge_dict
 
 
-PATIENCE = 100
+PATIENCE = 500
 
 
 def _run_fold_lp(data, tr_edges, va_edges, te_edges, params,

@@ -2,30 +2,29 @@ import csv, os, json, argparse
 import numpy as np
 from tqdm import tqdm
 
-from .data.dblp_loader import load_dblp
-from .data.acm_loader  import load_acm
-from .data.imdb_loader import load_imdb
-from .data.ogb_loader  import load_ogb
-
-from .tasks.hparam_search       import (hparam_search_nc, hparam_search_lp,
-                                         hparam_search_cl, hparam_search_rec)
 from .tasks.node_classification import run_final_nc
 from .tasks.link_prediction     import run_final_lp
 from .tasks.node_clustering     import run_final_clustering
 from .tasks.recommendation      import run_final_recommendation
 
-LOADERS  = {'dblp': load_dblp, 'acm': load_acm, 'imdb': load_imdb}
 N_SEEDS  = 10
 
-TARGET_REL_IDX = {'dblp': 0, 'acm': 0, 'imdb': 2}
+TARGET_REL_IDX = {'dblp': 0, 'acm': 0, 'imdb': 2, 'lastfm': 0}
 
 
 def _get_loader(dataset_name):
     """Get data loader for any supported dataset (HGB or OGB)."""
-    if dataset_name in LOADERS:
-        return LOADERS[dataset_name]()
-    else:
-        return load_ogb(dataset_name)
+    lazy = {
+        'dblp'  : lambda: __import__('src.data.dblp_loader',   fromlist=['']).load_dblp(),
+        'acm'   : lambda: __import__('src.data.acm_loader',    fromlist=['']).load_acm(),
+        'imdb'  : lambda: __import__('src.data.imdb_loader',   fromlist=['']).load_imdb(),
+        'lastfm': lambda: __import__('src.data.lastfm_loader', fromlist=['']).load_lastfm(),
+    }
+    loader_fn = lazy.get(dataset_name)
+    if loader_fn is not None:
+        return loader_fn()
+    from .data.ogb_loader import load_ogb
+    return load_ogb(dataset_name)
 
 RESULT_DIRS = {
     'nc'  : 'results/nc',
@@ -69,6 +68,7 @@ def _flatten_result(r):
 
 
 def run_nc(dataset_name, out_dir, head='gcn'):
+    from .tasks.hparam_search import hparam_search_nc
     print(f"\nLoading {dataset_name} data...", flush=True)
     data = _get_loader(dataset_name)
     data['name'] = dataset_name
@@ -121,6 +121,7 @@ def run_nc(dataset_name, out_dir, head='gcn'):
 
 def run_lp(dataset_name, out_dir, head='gcn'):
     import scipy.sparse as sp
+    from .tasks.hparam_search import hparam_search_lp
     data   = _get_loader(dataset_name)
     data['name'] = dataset_name
     rel_idx = data.get('target_relation_idx', TARGET_REL_IDX.get(dataset_name, 0))
@@ -175,6 +176,7 @@ def run_lp(dataset_name, out_dir, head='gcn'):
 
 
 def run_cl(dataset_name, out_dir, head='gcn'):
+    from .tasks.hparam_search import hparam_search_cl
     data = _get_loader(dataset_name)
     data['name'] = dataset_name
     print(f"\n{'='*60}\n  {dataset_name.upper()} — Graph Clustering\n{'='*60}")
@@ -219,6 +221,7 @@ def run_cl(dataset_name, out_dir, head='gcn'):
 
 
 def run_rec(dataset_name, out_dir, head='gcn', K_list=(10, 20, 50)):
+    from .tasks.hparam_search import hparam_search_rec
     import scipy.sparse as sp
     data   = _get_loader(dataset_name)
     data['name'] = dataset_name

@@ -55,7 +55,7 @@ PARAM_GRID_REC = {
 N_ITER    = 100
 N_FOLDS   = 5
 TEST_FRAC = 0.20
-PATIENCE  = 50
+PATIENCE  = 300
 
 
 def _random_combos(grid, seed=0, n=N_ITER):
