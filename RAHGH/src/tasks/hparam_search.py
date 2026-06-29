@@ -11,6 +11,8 @@ from ..model.rahgh import (
     build_edge_index_dict, build_node_type_indices,
     compile_model,
 )
+from ..data.lastfm_loader import rebuild_user_features
+from .link_prediction import _build_masked_edge_index
 from .node_clustering import run_fold_clustering
 
 
@@ -55,7 +57,7 @@ PARAM_GRID_REC = {
 N_ITER    = 100
 N_FOLDS   = 5
 TEST_FRAC = 0.20
-PATIENCE  = 300
+PATIENCE  = 50
 
 
 def _random_combos(grid, seed=0, n=N_ITER):
@@ -179,6 +181,12 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
                   x_dict=None, edge_index_dict=None, node_type_indices=None):
     from .recommendation import bpr_loss, recall_at_k
 
+    # Build inputs using only training edges to prevent leakage
+    fold_x_dict = rebuild_user_features(data, tr_edges, device)
+    fold_edge_index_dict = _build_masked_edge_index(data, tr_edges, device)
+    fold_node_type_indices = {k: v.to(device)
+                              for k, v in build_node_type_indices(data).items()}
+
     model = build_encoder(data, params, device)
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
 
@@ -192,7 +200,7 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
     for ep in range(1, params['epochs'] + 1):
         model.train()
         opt.zero_grad()
-        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
+        emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
         users = tr_edges[:, 0]; pos_items = tr_edges[:, 1]
         neg_items = rng.choice(all_items, size=len(users))
         loss = bpr_loss(emb, users, pos_items, neg_items, device,
@@ -203,7 +211,7 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
         if ep % 50 == 0 or ep == params['epochs']:
             model.eval()
             with torch.no_grad():
-                emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
+                emb_v, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
             rec = recall_at_k(emb_v, va_edges, user_pos, all_items, K_rec, device)
             best_rec = max(best_rec, rec)
 
@@ -216,6 +224,13 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
     from .link_prediction import sample_negatives, MLPDecoder
 
     d = params['d']
+
+    # Build inputs using only training edges to prevent leakage
+    fold_x_dict = rebuild_user_features(data, tr_edges, device)
+    fold_edge_index_dict = _build_masked_edge_index(data, tr_edges, device)
+    fold_node_type_indices = {k: v.to(device)
+                              for k, v in build_node_type_indices(data).items()}
+
     model = build_encoder(data, params, device)
     decoder = MLPDecoder(d).to(device)
     opt = Adam(list(model.parameters()) + list(decoder.parameters()),
@@ -225,7 +240,10 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
 
     all_src = np.unique(tr_edges[:, 0])
     all_dst = np.unique(tr_edges[:, 1])
-    va_neg = sample_negatives(va_edges, len(va_edges) * neg_ratio, all_src, all_dst, 1)
+    all_targets = data.get('all_target_edges')
+    va_neg = sample_negatives(va_edges, len(va_edges) * neg_ratio,
+                              all_src, all_dst, 1,
+                              all_positives=all_targets)
 
     def tensors(pos, neg):
         e = np.concatenate([pos, neg], 0)
@@ -238,7 +256,9 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
 
     tr_s = torch.tensor(tr_edges[:, 0], dtype=torch.long, device=device)
     tr_d = torch.tensor(tr_edges[:, 1], dtype=torch.long, device=device)
-    pos_set = set(map(tuple, tr_edges))
+    all_pos_set = set(map(tuple, tr_edges))
+    if all_targets is not None:
+        all_pos_set |= set(map(tuple, all_targets))
     rng = np.random.default_rng(0)
 
     best_auc, stall = 0.0, 0
@@ -250,12 +270,12 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
 
         neg_dst = rng.choice(all_dst, size=len(tr_edges))
         for i in range(len(neg_dst)):
-            while (int(tr_s[i]), int(neg_dst[i])) in pos_set:
+            while (int(tr_s[i]), int(neg_dst[i])) in all_pos_set:
                 neg_dst[i] = rng.choice(all_dst)
         neg_dst_t = torch.tensor(neg_dst, dtype=torch.long, device=device)
 
         with torch.amp.autocast(device_type=device.type, enabled=use_amp):
-            emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
+            emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
             pos_score = decoder(emb, tr_s, tr_d)
             neg_score = decoder(emb, tr_s, neg_dst_t)
             loss = -F.logsigmoid(pos_score - neg_score).mean()
@@ -270,7 +290,7 @@ def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn',
 
         model.eval(); decoder.eval()
         with torch.no_grad():
-            emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
+            emb_v, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
             p = torch.sigmoid(decoder(emb_v, va_s, va_d)).cpu().numpy()
             auc = roc_auc_score(va_l.cpu().numpy(), p)
 
@@ -395,10 +415,7 @@ def hparam_search_rec(data, target_edges, seed=42, out_dir='results/recommendati
     tr80_edges = target_edges[tr80_idx]
     te20_edges = target_edges[te20_idx]
 
-    # Prepare on-device data once before any fold
-    x_dict_once = {k: v.to(device) for k, v in data['X_dict'].items()}
-    edge_index_dict_once = build_edge_index_dict(data, device)
-    node_type_indices_once = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
+    data['all_target_edges'] = target_edges
 
     kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=seed)
     combos = _random_combos(PARAM_GRID_REC, seed=seed)
@@ -411,9 +428,8 @@ def hparam_search_rec(data, target_edges, seed=42, out_dir='results/recommendati
         fold_recs = []
         for fold, (tr_fold, va_fold) in enumerate(kf.split(tr80_edges)):
             rec = _run_fold_rec(data, tr80_edges[tr_fold], tr80_edges[va_fold],
-                                params, device, head=head, K_rec=params.get('K_rec', 20),
-                                x_dict=x_dict_once, edge_index_dict=edge_index_dict_once,
-                                node_type_indices=node_type_indices_once)
+                                params, device, head=head,
+                                K_rec=params.get('K_rec', 20))
             fold_recs.append(rec)
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_recall': round(rec, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
@@ -434,10 +450,8 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp', head='gc
     tr80_edges = target_edges[tr80_idx]
     te20_edges = target_edges[te20_idx]
 
-    # Prepare on-device data once before any fold
-    x_dict_once = {k: v.to(device) for k, v in data['X_dict'].items()}
-    edge_index_dict_once = build_edge_index_dict(data, device)
-    node_type_indices_once = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
+    # Store for negative sampling across all splits
+    data['all_target_edges'] = target_edges
 
     kf = KFold(n_splits=N_FOLDS, shuffle=True, random_state=seed)
     combos = _random_combos(PARAM_GRID_BASE, seed=seed)
@@ -456,9 +470,7 @@ def hparam_search_lp(data, target_edges, seed=42, out_dir='results/lp', head='gc
         fold_iter = tqdm(kf.split(tr80_edges), desc=f"    fold", total=N_FOLDS, leave=False)
         for fold, (tr_fold, va_fold) in enumerate(fold_iter):
             auc = _run_fold_lp(data, tr80_edges[tr_fold], tr80_edges[va_fold],
-                               te20_edges, params, device, head=head,
-                               x_dict=x_dict_once, edge_index_dict=edge_index_dict_once,
-                               node_type_indices=node_type_indices_once)
+                               te20_edges, params, device, head=head)
             fold_aucs.append(auc)
             fold_iter.set_postfix(auc=f"{auc:.4f}")
             cv_rows.append({'combo_id': ci, 'fold': fold, 'val_auc': round(auc, 4),

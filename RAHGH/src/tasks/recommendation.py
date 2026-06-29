@@ -8,6 +8,8 @@ from torch.optim import Adam
 from ..model.rahgh import (
     build_encoder, build_edge_index_dict, build_node_type_indices,
 )
+from ..data.lastfm_loader import rebuild_user_features
+from .link_prediction import _build_masked_edge_index
 
 
 def bpr_loss(emb, users, pos_items, neg_items, device, reg=1e-4):
@@ -101,8 +103,19 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
     d       = best_params['d']
     K_list  = list(K_list)
 
-    x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
-    edge_index_dict = build_edge_index_dict(data, device)
+    # Hold out 10% of training edges for validation
+    rng_split = np.random.default_rng(seed + 999)
+    n_tr = len(tr80_edges)
+    n_va = int(0.1 * n_tr)
+    va_idx = rng_split.choice(n_tr, n_va, replace=False)
+    tr_mask = np.ones(n_tr, dtype=bool)
+    tr_mask[va_idx] = False
+    tr_edges = tr80_edges[tr_mask]
+
+    # Prevent feature leakage: rebuild user features from training edges only
+    x_dict = rebuild_user_features(data, tr_edges, device)
+    edge_index_dict = _build_masked_edge_index(data, tr_edges, device,
+                                                target_rel_idx=target_relation_idx)
     node_type_indices = {k: v.to(device) for k, v in build_node_type_indices(data).items()}
 
     model = build_encoder(data, best_params, device)
@@ -123,8 +136,8 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
         model.train(); opt.zero_grad()
         emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
 
-        users     = tr80_edges[:, 0]
-        pos_items = tr80_edges[:, 1]
+        users     = tr_edges[:, 0]
+        pos_items = tr_edges[:, 1]
         neg_items = sample_bpr_negatives(users, all_items, user_pos, rng)
 
         loss = bpr_loss(emb, users, pos_items, neg_items, device,
