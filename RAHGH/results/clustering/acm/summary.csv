@@ -1,0 +1,2 @@
+dataset,task,nmi_mean,nmi_sd,ari_mean,ari_sd,acc_mean,acc_sd,n_seeds,best_hp_d,best_hp_K,best_hp_dropout,best_hp_lr,best_hp_wd,best_hp_epochs,best_hp_hidden,best_hp_cl_loss,best_hp_cl_temp
+acm,cl,0.0342,0.0218,0.0359,0.0238,0.4269,0.0454,10,256,3,0.3,0.005,0.001,100,128,reconstruction,0.1

@@ -1,0 +1,8 @@
+metric,value
+homo_vs_ref,0.9999978219206923
+homo_vs_pa,0.0
+homo_vs_ap,0.0
+homo_vs_ps,0.0
+homo_vs_sp,0.0
+eigenvector_cka,0.9999999999888947
+eigenvector_cosine,0.8344845043650911

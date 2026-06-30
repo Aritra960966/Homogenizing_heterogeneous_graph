@@ -1,0 +1,167 @@
+{
+  "dataset": "acm",
+  "N": 9073,
+  "Nt": 3025,
+  "n_sample": 1000,
+  "alpha": [
+    0.255377,
+    0.255377,
+    0.244623,
+    0.244623
+  ],
+  "rel_names": [
+    "pa",
+    "ap",
+    "ps",
+    "sp"
+  ],
+  "elapsed_s": 111.553856,
+  "cosine": {
+    "orig_to_H0": {
+      "mean": -0.015339,
+      "median": -0.012844,
+      "std": 0.087357,
+      "pct_positive": 0.443
+    },
+    "H0_to_Zf": {
+      "mean": 0.048115,
+      "median": 0.041952,
+      "std": 0.078669,
+      "pct_positive": 0.735
+    },
+    "orig_to_Zf": {
+      "mean": 0.067217,
+      "median": 0.070937,
+      "std": 0.113347,
+      "pct_positive": 0.705
+    }
+  },
+  "cka": {
+    "orig_to_H0": 0.263668,
+    "H0_to_Zf": 0.955986,
+    "orig_to_Zf": 0.219441
+  },
+  "neighbourhood": {
+    "k5": 0.19,
+    "k10": 0.2418,
+    "k20": 0.3067
+  },
+  "spectral": {
+    "homo_vs_ref": 0.999998,
+    "homo_per_rel": {
+      "pa": 0.0,
+      "ap": 0.0,
+      "ps": 0.0,
+      "sp": 0.0
+    }
+  },
+  "laplacian_preservation": 0.454882,
+  "degree_sim": 1.0,
+  "relation_connectivity": {
+    "pa": {
+      "connected_sim": 0.874537,
+      "random_sim": 0.202772,
+      "lift": 0.671764
+    },
+    "ap": {
+      "connected_sim": 0.876521,
+      "random_sim": 0.210216,
+      "lift": 0.666305
+    },
+    "ps": {
+      "connected_sim": 0.703394,
+      "random_sim": 0.206931,
+      "lift": 0.496463
+    },
+    "sp": {
+      "connected_sim": 0.703394,
+      "random_sim": 0.213628,
+      "lift": 0.489766
+    }
+  },
+  "relation_cka": {
+    "cka_to_final": {
+      "pa": 0.924429,
+      "ap": 0.924429,
+      "ps": 0.786226,
+      "sp": 0.786226
+    },
+    "pairwise_cka": {
+      "pa_vs_ap": 1.0,
+      "pa_vs_ps": 0.753736,
+      "pa_vs_sp": 0.753736,
+      "ap_vs_ps": 0.753736,
+      "ap_vs_sp": 0.753736,
+      "ps_vs_sp": 1.0
+    }
+  },
+  "reconstruction": {
+    "mse": 0.031738,
+    "mae": 0.068475,
+    "r2": 0.05308,
+    "corr": 0.508454
+  },
+  "embedding_stats": {
+    "rank": 53,
+    "effective_rank": 11.377071,
+    "participation_ratio": 5.4867,
+    "mean_norm": 2.84527,
+    "std_norm": 0.742557
+  },
+  "relation_recoverability": {
+    "accuracy": 1.0,
+    "macro_f1": 1.0
+  },
+  "compression": {
+    "hetero_edges": 26012,
+    "homo_edges": 26012,
+    "compression_ratio": 1.0
+  },
+  "eigenvector_similarity": {
+    "eigenvector_cka": 1.0,
+    "eigenvector_cosine": 0.834485
+  },
+  "downstream_preservation": {
+    "X_orig": 0.89657,
+    "H0": 0.922656,
+    "Z_final": 0.960866,
+    "DPS": 1.071714
+  },
+  "metapath_preservation": {
+    "PAP": null,
+    "PSP": 0.0
+  },
+  "mean_spectral": 0.0,
+  "metapath_neighborhood": {
+    "PAP": 0.0139,
+    "PSP": 0.0174
+  },
+  "metapath_classification": {
+    "PAP": {
+      "accuracy": 0.570093,
+      "f1": 0.583979,
+      "auc": 0.61031
+    },
+    "PSP": {
+      "accuracy": 0.588012,
+      "f1": 0.686671,
+      "auc": 0.591769
+    }
+  },
+  "metapath_diversity": {
+    "mp_cka": {
+      "PAP": 0.043824,
+      "PSP": 0.4835
+    },
+    "diversity": 0.967687
+  },
+  "metapath_weight_alignment": {
+    "PAP": 0.065218,
+    "PSP": 0.05984
+  },
+  "metapath_mps": {
+    "PAP": null,
+    "PSP": 0.241928
+  },
+  "avg_mps": 0.241928
+}

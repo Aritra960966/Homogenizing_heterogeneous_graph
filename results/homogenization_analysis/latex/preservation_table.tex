@@ -1,0 +1,94 @@
+\begin{table}[h]
+\centering
+\caption{Homogenization Preservation Analysis — ACM}
+\label{tab:preservation_acm}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+\multicolumn{2}{l}{\textit{Semantic Preservation}} \\
+CKA (features $\rightarrow$ H$^{(0)}$) & 0.2637 \\
+CKA (H$^{(0)} \rightarrow$ Z$_{\mathrm{final}}$) & 0.9560 \\
+CKA (features $\rightarrow$ Z$_{\mathrm{final}}$) & 0.2194 \\
+Cosine similarity (features $\rightarrow$ Z$_{\mathrm{final}}$) & 0.0672 $\pm$ 0.1133 \\
+\midrule
+\multicolumn{2}{l}{\textit{Neighbourhood Preservation}} \\
+k-NN overlap (k10) & 0.2418 \\
+k-NN overlap (k20) & 0.3067 \\
+k-NN overlap (k5) & 0.1900 \\
+\midrule
+\multicolumn{2}{l}{\textit{Structural Preservation}} \\
+Spectral similarity (A$_{\mathrm{homo}}$ vs ref) & 1.0000 \\
+Laplacian preservation & 0.4549 \\
+Degree distribution similarity & 1.0000 \\
+\midrule
+\multicolumn{2}{l}{\textit{Relation Connectivity Preservation}} \\
+pa (lift = connected $-$ random) & 0.8745 / lift=+0.6718 \\
+ap (lift = connected $-$ random) & 0.8765 / lift=+0.6663 \\
+ps (lift = connected $-$ random) & 0.7034 / lift=+0.4965 \\
+sp (lift = connected $-$ random) & 0.7034 / lift=+0.4898 \\
+\midrule
+\multicolumn{2}{l}{\textit{Relation CKA to Z$_{\mathrm{final}}$}} \\
+pa & 0.9244 \\
+ap & 0.9244 \\
+ps & 0.7862 \\
+sp & 0.7862 \\
+\midrule
+\multicolumn{2}{l}{\textit{Feature Reconstruction}} \\
+MSE & 0.031738 \\
+MAE & 0.068475 \\
+R$^2$ & 0.053080 \\
+Correlation & 0.508454 \\
+\midrule
+\multicolumn{2}{l}{\textit{Embedding Statistics}} \\
+Rank & 53 \\
+Effective Rank & 11.38 \\
+Participation Ratio & 5.49 \\
+Mean Norm & 2.8453 \\
+Std Norm & 0.7426 \\
+\midrule
+\multicolumn{2}{l}{\textit{Relation Recoverability}} \\
+Accuracy & 1.0000 \\
+Macro F1 & 1.0000 \\
+\midrule
+\multicolumn{2}{l}{\textit{Compression}} \\
+Hetero Edges & 26,012 \\
+Homo Edges & 26,012 \\
+Compression Ratio & 1.00$\times$ \\
+\midrule
+\multicolumn{2}{l}{\textit{Downstream Preservation}} \\
+X$_{\mathrm{orig}}$ Macro F1 & 0.8966 \\
+H$^{(0)}$ Macro F1 & 0.9227 \\
+Z$_{\mathrm{final}}$ Macro F1 & 0.9609 \\
+DPS & 1.0717 \\
+\midrule
+\multicolumn{2}{l}{\textit{Spectral Embedding}} \\
+Eigenvector CKA & 1.0000 \\
+Eigenvector Cosine & 0.8345 \\
+\midrule
+\multicolumn{2}{l}{\textit{Meta-path Spectral Preservation}} \\
+PAP & nan \\
+PSP & 0.0000 \\
+\midrule
+\multicolumn{2}{l}{\textit{Meta-path Neighborhood (k=10)}} \\
+PAP & 0.0139 \\
+PSP & 0.0174 \\
+\midrule
+\multicolumn{2}{l}{\textit{Meta-path Classification}} \\
+PAP AUC & 0.6103 \\
+PAP F1 & 0.5840 \\
+PSP AUC & 0.5918 \\
+PSP F1 & 0.6867 \\
+\midrule
+\multicolumn{2}{l}{\textit{Meta-path Diversity}} \\
+Diversity Score & 0.9677 \\
+PAP CKA & 0.0438 \\
+PSP CKA & 0.4835 \\
+\midrule
+\multicolumn{2}{l}{\textit{Meta-path Preservation Score (MPS)}} \\
+PAP MPS & nan \\
+PSP MPS & 0.2419 \\
+Average MPS & 0.2419 \\
+\bottomrule
+\end{tabular}
+\end{table}

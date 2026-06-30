@@ -1,0 +1,125 @@
+======================================================================
+HOMOGENIZATION PRESERVATION REPORT — ACM
+======================================================================
+
+CKA Metrics
+----------------------------------------
+orig_to_H0               : 0.263668
+H0_to_Zf                 : 0.955986
+orig_to_Zf               : 0.219441
+
+Cosine Similarity
+----------------------------------------
+orig_to_H0               : mean=-0.0153 std=0.0874 pct_pos=44.30%
+H0_to_Zf                 : mean=0.0481 std=0.0787 pct_pos=73.50%
+orig_to_Zf               : mean=0.0672 std=0.1133 pct_pos=70.50%
+
+Structural Metrics
+----------------------------------------
+Laplacian Preservation : 0.454882
+Degree Similarity      : 1.000000
+Spectral Sim (vs ref)  : 0.999998
+
+Neighbourhood Preservation
+----------------------------------------
+k10   : 0.241800
+k20   : 0.306700
+k5    : 0.190000
+
+Feature Reconstruction
+----------------------------------------
+mse       : 0.031738
+mae       : 0.068475
+r2        : 0.053080
+corr      : 0.508454
+
+Embedding Statistics
+----------------------------------------
+rank                  : 53
+effective_rank        : 11.377071380615234
+participation_ratio   : 5.486700057983398
+mean_norm             : 2.8452699184417725
+std_norm              : 0.7425570487976074
+
+Relation Recoverability
+----------------------------------------
+Accuracy : 1.0000
+Macro F1 : 1.0000
+
+Compression Metrics
+----------------------------------------
+Hetero Edges      : 26,012
+Homo Edges        : 26,012
+Compression Ratio : 1.00x
+
+Downstream Preservation
+----------------------------------------
+X_orig Macro F1  : 0.8966
+H0 Macro F1      : 0.9227
+Z_final Macro F1 : 0.9609
+DPS              : 1.0717
+
+Spectral Embedding Preservation
+----------------------------------------
+Eigenvector CKA    : 1.0000
+Eigenvector Cosine : 0.8463
+
+Meta-path Spectral Preservation
+----------------------------------------
+PAP       : 0.000964
+PSP       : 0.000000
+
+Meta-path Similarity Correlation (Spearman)
+----------------------------------------
+PAP       : 0.054031
+PSP       : 0.446781
+
+Meta-path Classification Preservation
+----------------------------------------
+Meta-path       AUC       F1
+------------------------------
+PAP          0.6190   0.5904
+PSP          0.5851   0.5521
+
+Meta-path Diversity Preservation
+----------------------------------------
+Diversity Score : 0.9677
+PAP CKA with Z_final: 0.0438
+PSP CKA with Z_final: 0.4835
+
+Meta-path CKA Preservation (Method 2)
+----------------------------------------
+PAP       : 0.044829
+PSP       : 0.483500
+
+Meta-path Retrieval (Method 3)
+----------------------------------------
+Meta-path       MRR     R@10     R@20     R@50
+-------------------------------------------------------
+PAP          0.0889   0.0672   0.1076   0.2327
+PSP          0.6111   0.5008   0.5025   0.5105
+
+Meta-path Weight Alignment
+----------------------------------------
+PAP       : 0.065218
+PSP       : 0.059840
+
+Meta-path Preservation Score (MPS)
+----------------------------------------
+Meta-path       AUC  SimCorr      CKA  Spectral      MPS
+------------------------------------------------------------
+PAP          0.6190   0.0540   0.0448    0.0010   0.2106
+PSP          0.5851   0.4468   0.4835    0.0000   0.4081
+------------------------------------------------------------
+Average                                           0.3094
+
+Relation Connectivity Preservation
+----------------------------------------
+Relation              Connected     Random     Lift
+--------------------------------------------------
+pa                       0.8745     0.2028  +0.6718
+ap                       0.8765     0.2102  +0.6663
+ps                       0.7034     0.2069  +0.4965
+sp                       0.7034     0.2136  +0.4898
+
+======================================================================

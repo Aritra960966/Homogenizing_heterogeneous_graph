@@ -1,0 +1,1015 @@
+    fold_scores=[0.8962, 0.925, 0.9127, 0.9414, 0.9077]                                                                                                          
+    mean_macro_f1=0.9166  [24s]
+
+  combination 2({'d': 64, 'K': 2, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.8916, 0.9182, 0.9082, 0.9508, 0.9062]                                                                                                         
+    mean_macro_f1=0.9150  [14s]
+
+  combination 3({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.8941, 0.925, 0.9086, 0.9484, 0.9107]                                                                                                          
+    mean_macro_f1=0.9174  [17s]
+
+  combination 4({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+Traceback (most recent call last):                                                                                                                               
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\train.py", line 271, in <module>
+    TASK_FNS[args.task](args.dataset, out_dir, head=args.head)
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\train.py", line 68, in run_nc
+    best_params, tr80, te20 = hparam_search_nc(data, seed=42, out_dir=out_dir,
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\tasks\hparam_search.py", line 288, in hparam_search_nc
+    vm = _run_fold_nc(data, params, tr80[tr_fold], tr80[va_fold], device, head=head,
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\tasks\hparam_search.py", line 101, in _run_fold_nc
+    logits, *_ = model(x_dict, edge_index_dict, node_type_indices)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\nn\modules\module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\nn\modules\module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\model\rahgh.py", line 424, in forward
+    Z_final, alpha = self.homogenizer(x_dict, edge_index_dict, node_type_indices)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\nn\modules\module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\nn\modules\module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\model\rahgh.py", line 191, in forward
+    Z_dict = self.diffuser(H0, P_dict)                # {rel: (N, d)}
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\nn\modules\module.py", line 1739, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\nn\modules\module.py", line 1750, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\model\poly_diffusion.py", line 95, in forward
+    H_k = apply_corrected_propagation(H_k, P_r, bipartite)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\_dynamo\eval_frame.py", line 745, in _fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\model\bipartite_correction.py", line 44, in apply_corrected_propagation
+    out = torch.sparse.mm(P_r, V)
+          ^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+PS D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH> python -m src.train --dataset acm  --task nc --seeds 10 --head gcn
+[env] CUDA available : True
+[env] GPU            : NVIDIA RTX A5000  23 GB  compute 8.6
+[env] cudnn.benchmark: True
+[env] matmul_precision: high
+[env] num_threads    : 1
+
+Loading acm data...
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\train.py", line 271, in <module>
+    TASK_FNS[args.task](args.dataset, out_dir, head=args.head)
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\train.py", line 64, in run_nc
+    data = LOADERS[dataset_name]()
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\data\acm_loader.py", line 153, in load_acm
+    with open(folder / 'label.dat.train') as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'data\\raw\\ACM\\label.dat.train'
+PS D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH> python -m src.train --dataset acm  --task nc --seeds 10 --head gcn
+[env] CUDA available : True
+[env] GPU            : NVIDIA RTX A5000  23 GB  compute 8.6
+[env] cudnn.benchmark: True
+[env] matmul_precision: high
+[env] num_threads    : 1
+
+Loading acm data...
+
+============================================================
+  ACM — Node Classification
+============================================================
+
+  Hyperparameter search: 72 combos × 5 folds = 360 runs
+
+  combination 1({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+Traceback (most recent call last):                                                                                                                               
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\train.py", line 271, in <module>
+    TASK_FNS[args.task](args.dataset, out_dir, head=args.head)
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\train.py", line 68, in run_nc
+    best_params, tr80, te20 = hparam_search_nc(data, seed=42, out_dir=out_dir,
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\tasks\hparam_search.py", line 288, in hparam_search_nc
+    vm = _run_fold_nc(data, params, tr80[tr_fold], tr80[va_fold], device, head=head,
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH\src\tasks\hparam_search.py", line 104, in _run_fold_nc
+    scaler.scale(loss).backward()
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\_tensor.py", line 626, in backward
+    torch.autograd.backward(
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\autograd\__init__.py", line 347, in backward
+    _engine_run_backward(
+  File "D:\Aritra\graph\.venv\Lib\site-packages\torch\autograd\graph.py", line 823, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
+PS D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH> python -m src.train --dataset acm  --task nc --seeds 10 --head gat
+[env] CUDA available : True
+[env] GPU            : NVIDIA RTX A5000  23 GB  compute 8.6
+[env] cudnn.benchmark: True
+[env] matmul_precision: high
+[env] num_threads    : 1
+
+Loading acm data...
+
+============================================================
+  ACM — Node Classification
+============================================================
+
+  Hyperparameter search: 100 combos × 5 folds = 500 runs
+
+  combination 1({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9471, 0.9448, 0.9672, 0.9285, 0.9484]                                                                                                         
+    mean_macro_f1=0.9472  [28s]
+
+  combination 2({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9465, 0.9488, 0.9508, 0.9307, 0.9468]                                                                                                         
+    mean_macro_f1=0.9447  [22s]
+
+  combination 3({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9429, 0.9346, 0.9591, 0.9302, 0.9547]                                                                                                         
+    mean_macro_f1=0.9443  [14s]
+
+  combination 4({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9531, 0.9448, 0.957, 0.9261, 0.9508]                                                                                                          
+    mean_macro_f1=0.9464  [29s]
+
+  combination 5({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9551, 0.9448, 0.9572, 0.9365, 0.9548]                                                                                                         
+    mean_macro_f1=0.9497  [21s]
+
+  combination 6({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.949, 0.9468, 0.9507, 0.9244, 0.9529]                                                                                                          
+    mean_macro_f1=0.9448  [27s]
+
+  combination 7({'d': 128, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.947, 0.9368, 0.9674, 0.9384, 0.9508]                                                                                                          
+    mean_macro_f1=0.9481  [19s]
+
+  combination 8({'d': 128, 'K': 1, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9451, 0.9406, 0.9654, 0.9299, 0.9508]                                                                                                         
+    mean_macro_f1=0.9464  [9s]
+
+  combination 9({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9448, 0.9448, 0.9571, 0.9367, 0.9465]                                                                                                         
+    mean_macro_f1=0.9460  [17s]
+
+  combination 10({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9508, 0.9489, 0.9568, 0.9367, 0.9527]                                                                                                         
+    mean_macro_f1=0.9492  [19s]
+
+  combination 11({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9427, 0.9428, 0.9633, 0.9323, 0.9548]                                                                                                         
+    mean_macro_f1=0.9472  [22s]
+
+  combination 12({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.949, 0.9449, 0.9592, 0.9278, 0.9549]                                                                                                          
+    mean_macro_f1=0.9471  [27s]
+
+  combination 13({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.951, 0.9428, 0.9549, 0.9304, 0.9487]                                                                                                          
+    mean_macro_f1=0.9456  [26s]
+
+  combination 14({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9448, 0.9388, 0.9613, 0.9408, 0.9507]                                                                                                         
+    mean_macro_f1=0.9473  [14s]
+
+  combination 15({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9448, 0.9451, 0.9611, 0.9381, 0.9549]                                                                                                         
+    mean_macro_f1=0.9488  [19s]
+
+  combination 16({'d': 64, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9593, 0.9407, 0.9569, 0.9346, 0.9546]                                                                                                         
+    mean_macro_f1=0.9492  [24s]
+
+  combination 17({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9592, 0.9428, 0.9572, 0.9264, 0.9407]                                                                                                         
+    mean_macro_f1=0.9452  [16s]
+
+  combination 18({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9408, 0.9407, 0.961, 0.9323, 0.9507]                                                                                                          
+    mean_macro_f1=0.9451  [9s]
+
+  combination 19({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9448, 0.9428, 0.9549, 0.9242, 0.9504]                                                                                                         
+    mean_macro_f1=0.9434  [21s]
+
+  combination 20({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9506, 0.9468, 0.9652, 0.9385, 0.9547]                                                                                                         
+    mean_macro_f1=0.9512  [24s]
+
+  combination 21({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9531, 0.9405, 0.9632, 0.9285, 0.9547]                                                                                                         
+    mean_macro_f1=0.9480  [21s]
+
+  combination 22({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.949, 0.9448, 0.9526, 0.9364, 0.9509]                                                                                                          
+    mean_macro_f1=0.9467  [16s]
+
+  combination 23({'d': 128, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9469, 0.9365, 0.9531, 0.9385, 0.9506]                                                                                                         
+    mean_macro_f1=0.9451  [9s]
+
+  combination 24({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9471, 0.9488, 0.9591, 0.9302, 0.9469]                                                                                                         
+    mean_macro_f1=0.9464  [18s]
+
+  combination 25({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.941, 0.9347, 0.9591, 0.9405, 0.9485]                                                                                                          
+    mean_macro_f1=0.9447  [13s]
+
+  combination 26({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9511, 0.9469, 0.9509, 0.9284, 0.9507]                                                                                                         
+    mean_macro_f1=0.9456  [14s]
+
+  combination 27({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9469, 0.9468, 0.9653, 0.9342, 0.9568]                                                                                                         
+    mean_macro_f1=0.9500  [25s]
+
+  combination 28({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9491, 0.9469, 0.957, 0.928, 0.9526]                                                                                                           
+    mean_macro_f1=0.9467  [32s]
+
+  combination 29({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9449, 0.949, 0.9651, 0.9366, 0.9549]                                                                                                          
+    mean_macro_f1=0.9501  [25s]
+
+  combination 30({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9572, 0.9468, 0.9592, 0.9324, 0.9489]                                                                                                         
+    mean_macro_f1=0.9489  [29s]
+
+  combination 31({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9592, 0.9446, 0.9612, 0.928, 0.9526]                                                                                                          
+    mean_macro_f1=0.9491  [9s]
+
+  combination 32({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9491, 0.9409, 0.953, 0.9246, 0.9487]                                                                                                          
+    mean_macro_f1=0.9432  [30s]
+
+  combination 33({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9468, 0.9426, 0.951, 0.9361, 0.9489]                                                                                                          
+    mean_macro_f1=0.9451  [23s]
+
+  combination 34({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9531, 0.9447, 0.9614, 0.9325, 0.9524]                                                                                                         
+    mean_macro_f1=0.9488  [21s]
+
+  combination 35({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9426, 0.9466, 0.9426, 0.9301, 0.9507]                                                                                                         
+    mean_macro_f1=0.9426  [15s]
+
+  combination 36({'d': 64, 'K': 2, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.949, 0.9364, 0.9631, 0.9277, 0.9486]                                                                                                          
+    mean_macro_f1=0.9449  [14s]
+
+  combination 37({'d': 64, 'K': 1, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9531, 0.9388, 0.949, 0.9343, 0.9525]                                                                                                          
+    mean_macro_f1=0.9455  [10s]
+
+  combination 38({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9531, 0.9449, 0.9489, 0.9405, 0.9527]                                                                                                         
+    mean_macro_f1=0.9480  [17s]
+
+  combination 39({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.949, 0.9428, 0.9593, 0.9443, 0.9507]                                                                                                          
+    mean_macro_f1=0.9492  [21s]
+
+  combination 40({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9427, 0.9387, 0.9589, 0.9243, 0.9546]                                                                                                         
+    mean_macro_f1=0.9438  [8s]
+
+  combination 41({'d': 128, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.947, 0.9469, 0.9551, 0.9365, 0.9546]                                                                                                          
+    mean_macro_f1=0.9480  [10s]
+
+  combination 42({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.949, 0.9406, 0.9509, 0.9303, 0.9527]                                                                                                          
+    mean_macro_f1=0.9447  [15s]
+
+  combination 43({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9389, 0.9365, 0.9611, 0.9327, 0.9548]                                                                                                         
+    mean_macro_f1=0.9448  [28s]
+
+  combination 44({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9491, 0.9426, 0.9652, 0.9364, 0.9587]                                                                                                         
+    mean_macro_f1=0.9504  [13s]
+
+  combination 45({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9612, 0.9468, 0.9569, 0.9279, 0.9551]                                                                                                         
+    mean_macro_f1=0.9496  [23s]
+
+  combination 46({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9469, 0.9426, 0.9631, 0.9303, 0.9467]                                                                                                         
+    mean_macro_f1=0.9459  [16s]
+
+  combination 47({'d': 128, 'K': 2, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9509, 0.9429, 0.9589, 0.9304, 0.9447]                                                                                                         
+    mean_macro_f1=0.9455  [13s]
+
+  combination 48({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9486, 0.949, 0.9528, 0.9306, 0.9507]                                                                                                          
+    mean_macro_f1=0.9463  [18s]
+
+  combination 49({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9451, 0.9448, 0.963, 0.9368, 0.9506]                                                                                                          
+    mean_macro_f1=0.9480  [22s]
+
+  combination 50({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9491, 0.9387, 0.9611, 0.9402, 0.9546]                                                                                                         
+    mean_macro_f1=0.9487  [12s]
+
+  combination 51({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9429, 0.9345, 0.9633, 0.9364, 0.9525]                                                                                                         
+    mean_macro_f1=0.9459  [24s]
+
+  combination 52({'d': 64, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9551, 0.9468, 0.9591, 0.9363, 0.9487]                                                                                                         
+    mean_macro_f1=0.9492  [23s]
+
+  combination 53({'d': 64, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9511, 0.9447, 0.9653, 0.9362, 0.9465]                                                                                                         
+    mean_macro_f1=0.9488  [12s]
+
+  combination 54({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9488, 0.9387, 0.9463, 0.9305, 0.9508]                                                                                                         
+    mean_macro_f1=0.9430  [20s]
+
+  combination 55({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.945, 0.9468, 0.9593, 0.9263, 0.9548]                                                                                                          
+    mean_macro_f1=0.9464  [20s]
+
+  combination 56({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9468, 0.9406, 0.959, 0.9343, 0.9443]                                                                                                          
+    mean_macro_f1=0.9450  [11s]
+
+  combination 57({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9552, 0.9448, 0.9613, 0.9304, 0.9508]                                                                                                         
+    mean_macro_f1=0.9485  [19s]
+
+  combination 58({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.951, 0.9427, 0.9652, 0.9386, 0.9508]                                                                                                          
+    mean_macro_f1=0.9496  [26s]
+
+  combination 59({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9445, 0.9449, 0.9652, 0.9383, 0.9448]                                                                                                         
+    mean_macro_f1=0.9475  [13s]
+
+  combination 60({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9429, 0.9407, 0.9444, 0.9346, 0.9526]                                                                                                         
+    mean_macro_f1=0.9430  [23s]
+
+  combination 61({'d': 128, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9471, 0.9448, 0.9591, 0.9345, 0.9505]                                                                                                         
+    mean_macro_f1=0.9472  [19s]
+
+  combination 62({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9471, 0.9407, 0.9489, 0.9307, 0.9442]                                                                                                         
+    mean_macro_f1=0.9423  [12s]
+
+  combination 63({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.945, 0.943, 0.959, 0.9345, 0.9566]                                                                                                            
+    mean_macro_f1=0.9476  [19s]
+
+  combination 64({'d': 128, 'K': 2, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9428, 0.9383, 0.9568, 0.9283, 0.9528]                                                                                                         
+    mean_macro_f1=0.9438  [13s]
+
+  combination 65({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9366, 0.941, 0.961, 0.9407, 0.9508]                                                                                                           
+    mean_macro_f1=0.9460  [8s]
+
+  combination 66({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9509, 0.9468, 0.957, 0.9342, 0.9489]                                                                                                          
+    mean_macro_f1=0.9476  [17s]
+
+  combination 67({'d': 128, 'K': 4, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.957, 0.9448, 0.9653, 0.9304, 0.9485]                                                                                                          
+    mean_macro_f1=0.9492  [18s]
+
+  combination 68({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.949, 0.9304, 0.9588, 0.9366, 0.9529]                                                                                                          
+    mean_macro_f1=0.9455  [27s]
+
+  combination 69({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.945, 0.9407, 0.9551, 0.9221, 0.9485]                                                                                                          
+    mean_macro_f1=0.9423  [27s]
+
+  combination 70({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9511, 0.9426, 0.961, 0.9404, 0.9504]                                                                                                          
+    mean_macro_f1=0.9491  [18s]
+
+  combination 71({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9489, 0.9447, 0.9611, 0.9387, 0.9548]                                                                                                         
+    mean_macro_f1=0.9496  [14s]
+
+  combination 72({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.949, 0.945, 0.961, 0.9263, 0.9488]                                                                                                            
+    mean_macro_f1=0.9460  [17s]
+
+  combination 73({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.943, 0.9327, 0.949, 0.9282, 0.9468]                                                                                                           
+    mean_macro_f1=0.9399  [23s]
+
+  combination 74({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.949, 0.9427, 0.9612, 0.9238, 0.9548]                                                                                                          
+    mean_macro_f1=0.9463  [31s]
+
+  combination 75({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9531, 0.9508, 0.955, 0.9369, 0.9545]                                                                                                          
+    mean_macro_f1=0.9501  [23s]
+
+  combination 76({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9509, 0.9388, 0.9589, 0.9365, 0.9527]                                                                                                         
+    mean_macro_f1=0.9476  [18s]
+
+  combination 77({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9449, 0.9385, 0.9652, 0.9384, 0.9568]                                                                                                         
+    mean_macro_f1=0.9488  [17s]
+
+  combination 78({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.951, 0.9468, 0.9572, 0.9305, 0.9467]                                                                                                          
+    mean_macro_f1=0.9465  [16s]
+
+  combination 79({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9428, 0.9428, 0.9528, 0.9262, 0.9546]                                                                                                         
+    mean_macro_f1=0.9438  [17s]
+
+  combination 80({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.949, 0.9406, 0.9508, 0.9344, 0.9568]                                                                                                          
+    mean_macro_f1=0.9463  [18s]
+
+  combination 81({'d': 128, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9448, 0.9409, 0.9507, 0.9322, 0.9529]                                                                                                         
+    mean_macro_f1=0.9443  [11s]
+
+  combination 82({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9571, 0.9429, 0.9632, 0.9327, 0.9526]                                                                                                         
+    mean_macro_f1=0.9497  [25s]
+
+  combination 83({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9511, 0.9468, 0.9653, 0.9326, 0.9486]                                                                                                         
+    mean_macro_f1=0.9489  [16s]
+
+  combination 84({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9429, 0.9448, 0.9552, 0.9387, 0.9464]                                                                                                         
+    mean_macro_f1=0.9456  [12s]
+
+  combination 85({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.947, 0.9428, 0.9507, 0.9265, 0.9505]                                                                                                          
+    mean_macro_f1=0.9435  [26s]
+
+  combination 86({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.947, 0.9448, 0.9548, 0.9263, 0.9527]                                                                                                          
+    mean_macro_f1=0.9451  [26s]
+
+  combination 87({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.943, 0.9449, 0.957, 0.9264, 0.9525]                                                                                                           
+    mean_macro_f1=0.9448  [12s]
+
+  combination 88({'d': 64, 'K': 1, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.947, 0.9405, 0.9465, 0.9323, 0.9506]                                                                                                          
+    mean_macro_f1=0.9434  [12s]
+
+  combination 89({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9469, 0.9446, 0.9589, 0.9407, 0.9547]                                                                                                         
+    mean_macro_f1=0.9492  [17s]
+
+  combination 90({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9551, 0.9447, 0.9613, 0.9404, 0.9528]                                                                                                         
+    mean_macro_f1=0.9509  [17s]
+
+  combination 91({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9511, 0.9468, 0.9551, 0.9322, 0.9468]                                                                                                         
+    mean_macro_f1=0.9464  [23s]
+
+  combination 92({'d': 128, 'K': 1, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9509, 0.9385, 0.9611, 0.9259, 0.9528]                                                                                                         
+    mean_macro_f1=0.9458  [9s]
+
+  combination 93({'d': 128, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9449, 0.9406, 0.9613, 0.9321, 0.9444]                                                                                                         
+    mean_macro_f1=0.9447  [9s]
+
+  combination 94({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9551, 0.9366, 0.9467, 0.9364, 0.9489]                                                                                                         
+    mean_macro_f1=0.9447  [25s]
+
+  combination 95({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9471, 0.9448, 0.9653, 0.9383, 0.9489]                                                                                                         
+    mean_macro_f1=0.9489  [14s]
+
+  combination 96({'d': 128, 'K': 1, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.951, 0.9405, 0.953, 0.9282, 0.9506]                                                                                                           
+    mean_macro_f1=0.9447  [9s]
+
+  combination 97({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.953, 0.9428, 0.9632, 0.9281, 0.9525]                                                                                                          
+    mean_macro_f1=0.9479  [24s]
+
+  combination 98({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9531, 0.949, 0.9591, 0.9344, 0.9507]                                                                                                          
+    mean_macro_f1=0.9493  [18s]
+
+  combination 99({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9509, 0.9325, 0.957, 0.9382, 0.9507]                                                                                                          
+    mean_macro_f1=0.9459  [8s]
+
+  combination 100({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.949, 0.9429, 0.9492, 0.9281, 0.9546]                                                                                                          
+    mean_macro_f1=0.9447  [22s]
+  Saved -> results/nc\acm\cv_fold_scores.csv
+[hparam] Best params saved -> results/nc\acm\best_params.json
+[NC hparam] best_val_macro=0.9512  params={'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500}  total=1847s
+loss=0.0778: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.14it/s]
+  Model saved → results/nc\acm\final_model_seed0.pt
+loss=0.0896: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.12it/s]
+  Model saved → results/nc\acm\final_model_seed1.pt
+loss=0.0733: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.17it/s]
+  Model saved → results/nc\acm\final_model_seed2.pt
+loss=0.0754: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.14it/s]
+  Model saved → results/nc\acm\final_model_seed3.pt
+loss=0.0968: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.18it/s]
+  Model saved → results/nc\acm\final_model_seed4.pt
+loss=0.1066: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.24it/s]
+  Model saved → results/nc\acm\final_model_seed5.pt
+loss=0.0944: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.20it/s]
+  Model saved → results/nc\acm\final_model_seed6.pt
+loss=0.0946: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.16it/s]
+  Model saved → results/nc\acm\final_model_seed7.pt
+loss=0.0907: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.20it/s]
+  Model saved → results/nc\acm\final_model_seed8.pt
+loss=0.1072: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:18<00:00, 27.23it/s]
+  Model saved → results/nc\acm\final_model_seed9.pt
+  Per-run results → results/nc\acm\per_run_results.csv
+  Summary → results/nc\acm\summary.csv
+
+  acm NC  (n=10 seeds)
+  Macro-F1 : 0.9396 ± 0.0060
+  Micro-F1 : 0.9393 ± 0.0060
+  Accuracy : 0.9393 ± 0.0060
+  AUC (OvR): 0.9909 ± 0.0022
+PS D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH> python -m src.train --dataset acm  --task nc --seeds 10 --head gan
+[env] CUDA available : True
+[env] GPU            : NVIDIA RTX A5000  23 GB  compute 8.6
+[env] cudnn.benchmark: True
+[env] matmul_precision: high
+[env] num_threads    : 1
+usage: train.py [-h] --dataset {dblp,acm,imdb} --task {nc,lp,cl,rec} [--seeds SEEDS] [--head {gcn,gat}]
+train.py: error: argument --head: invalid choice: 'gan' (choose from 'gcn', 'gat')
+PS D:\Aritra\graph\Homogenizing_heterogeneous_graph\RAHGH> python -m src.train --dataset acm  --task nc --seeds 10 --head gcn
+[env] CUDA available : True
+[env] GPU            : NVIDIA RTX A5000  23 GB  compute 8.6
+[env] cudnn.benchmark: True
+[env] matmul_precision: high
+[env] num_threads    : 1
+
+Loading acm data...
+
+============================================================
+  ACM — Node Classification
+============================================================
+
+  Hyperparameter search: 100 combos × 5 folds = 500 runs
+
+  combination 1({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.943, 0.9346, 0.9569, 0.9347, 0.9468]                                                                                                          
+    mean_macro_f1=0.9432  [21s]
+
+  combination 2({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9469, 0.9387, 0.9611, 0.9324, 0.9486]                                                                                                         
+    mean_macro_f1=0.9455  [19s]
+
+  combination 3({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9451, 0.9245, 0.9532, 0.9282, 0.9488]                                                                                                         
+    mean_macro_f1=0.9400  [17s]
+
+  combination 4({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9512, 0.9326, 0.9611, 0.9345, 0.9526]                                                                                                         
+    mean_macro_f1=0.9464  [29s]
+
+  combination 5({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9449, 0.9428, 0.949, 0.9342, 0.9464]                                                                                                          
+    mean_macro_f1=0.9434  [20s]
+
+  combination 6({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9429, 0.9326, 0.9612, 0.9305, 0.9527]                                                                                                         
+    mean_macro_f1=0.9440  [29s]
+
+  combination 7({'d': 128, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9491, 0.9387, 0.9612, 0.9316, 0.9549]                                                                                                         
+    mean_macro_f1=0.9471  [17s]
+
+  combination 8({'d': 128, 'K': 1, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9469, 0.9366, 0.955, 0.9367, 0.9482]                                                                                                          
+    mean_macro_f1=0.9447  [9s]
+
+  combination 9({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9471, 0.9306, 0.9589, 0.9305, 0.9507]                                                                                                         
+    mean_macro_f1=0.9435  [20s]
+
+  combination 10({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.949, 0.9387, 0.9613, 0.9347, 0.9526]                                                                                                          
+    mean_macro_f1=0.9473  [22s]
+
+  combination 11({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.947, 0.9265, 0.9653, 0.9326, 0.9487]                                                                                                          
+    mean_macro_f1=0.9440  [28s]
+
+  combination 12({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9511, 0.9365, 0.959, 0.9367, 0.9467]                                                                                                          
+    mean_macro_f1=0.9460  [26s]
+
+  combination 13({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.943, 0.9306, 0.957, 0.9322, 0.9447]                                                                                                           
+    mean_macro_f1=0.9415  [24s]
+
+  combination 14({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.947, 0.9426, 0.9591, 0.9343, 0.9526]                                                                                                          
+    mean_macro_f1=0.9471  [14s]
+
+  combination 15({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.947, 0.9325, 0.9591, 0.9367, 0.9467]                                                                                                          
+    mean_macro_f1=0.9444  [23s]
+
+  combination 16({'d': 64, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9512, 0.9386, 0.9611, 0.9367, 0.9505]                                                                                                         
+    mean_macro_f1=0.9476  [20s]
+
+  combination 17({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9488, 0.9303, 0.9531, 0.9424, 0.9486]                                                                                                         
+    mean_macro_f1=0.9446  [18s]
+
+  combination 18({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9471, 0.9265, 0.9552, 0.9306, 0.9505]                                                                                                         
+    mean_macro_f1=0.9420  [12s]
+
+  combination 19({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.949, 0.9365, 0.9592, 0.9348, 0.9507]                                                                                                          
+    mean_macro_f1=0.9460  [18s]
+
+  combination 20({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9532, 0.9509, 0.9631, 0.9366, 0.9528]                                                                                                         
+    mean_macro_f1=0.9513  [23s]
+
+  combination 21({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9491, 0.9405, 0.9593, 0.9282, 0.9505]                                                                                                         
+    mean_macro_f1=0.9455  [15s]
+
+  combination 22({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9491, 0.9367, 0.9592, 0.9323, 0.9507]                                                                                                         
+    mean_macro_f1=0.9456  [17s]
+
+  combination 23({'d': 128, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.949, 0.9306, 0.955, 0.9326, 0.9467]                                                                                                           
+    mean_macro_f1=0.9428  [10s]
+
+  combination 24({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.947, 0.9387, 0.963, 0.9325, 0.9487]                                                                                                           
+    mean_macro_f1=0.9460  [16s]
+
+  combination 25({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9449, 0.9425, 0.9573, 0.9367, 0.9549]                                                                                                         
+    mean_macro_f1=0.9472  [11s]
+
+  combination 26({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9489, 0.9283, 0.955, 0.9324, 0.9508]                                                                                                          
+    mean_macro_f1=0.9431  [15s]
+
+  combination 27({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9491, 0.9426, 0.9693, 0.9365, 0.9527]                                                                                                         
+    mean_macro_f1=0.9500  [24s]
+
+  combination 28({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9492, 0.9366, 0.9592, 0.9304, 0.9467]                                                                                                         
+    mean_macro_f1=0.9444  [28s]
+
+  combination 29({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.951, 0.9428, 0.9611, 0.9319, 0.9527]                                                                                                          
+    mean_macro_f1=0.9479  [20s]
+
+  combination 30({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9532, 0.9429, 0.9633, 0.9366, 0.9528]                                                                                                         
+    mean_macro_f1=0.9498  [33s]
+
+  combination 31({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9491, 0.9326, 0.951, 0.9366, 0.9464]                                                                                                          
+    mean_macro_f1=0.9431  [12s]
+
+  combination 32({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9447, 0.9407, 0.9572, 0.9343, 0.9466]                                                                                                         
+    mean_macro_f1=0.9447  [27s]
+
+  combination 33({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9531, 0.9367, 0.9613, 0.9327, 0.9508]                                                                                                         
+    mean_macro_f1=0.9469  [29s]
+
+  combination 34({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9511, 0.9428, 0.9613, 0.9325, 0.9507]                                                                                                         
+    mean_macro_f1=0.9477  [22s]
+
+  combination 35({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9472, 0.9404, 0.9568, 0.9302, 0.9506]                                                                                                         
+    mean_macro_f1=0.9450  [15s]
+
+  combination 36({'d': 64, 'K': 2, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9451, 0.9324, 0.9592, 0.9324, 0.9507]                                                                                                         
+    mean_macro_f1=0.9440  [16s]
+
+  combination 37({'d': 64, 'K': 1, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.947, 0.9348, 0.9612, 0.9366, 0.9502]                                                                                                          
+    mean_macro_f1=0.9460  [8s]
+
+  combination 38({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.951, 0.9406, 0.957, 0.9305, 0.9508]                                                                                                           
+    mean_macro_f1=0.9460  [18s]
+
+  combination 39({'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9511, 0.9428, 0.957, 0.9385, 0.9528]                                                                                                          
+    mean_macro_f1=0.9484  [21s]
+
+  combination 40({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.949, 0.9407, 0.9591, 0.9367, 0.9488]                                                                                                          
+    mean_macro_f1=0.9469  [8s]
+
+  combination 41({'d': 128, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9471, 0.9386, 0.9546, 0.9344, 0.9529]                                                                                                         
+    mean_macro_f1=0.9455  [9s]
+
+  combination 42({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9489, 0.9345, 0.9571, 0.9327, 0.9488]                                                                                                         
+    mean_macro_f1=0.9444  [15s]
+
+  combination 43({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9511, 0.9305, 0.9634, 0.9323, 0.9468]                                                                                                         
+    mean_macro_f1=0.9448  [27s]
+
+  combination 44({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9511, 0.9407, 0.9568, 0.9406, 0.9528]                                                                                                         
+    mean_macro_f1=0.9484  [12s]
+
+  combination 45({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9408, 0.9366, 0.957, 0.9264, 0.9486]                                                                                                          
+    mean_macro_f1=0.9419  [28s]
+
+  combination 46({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9531, 0.9366, 0.961, 0.9428, 0.9549]                                                                                                          
+    mean_macro_f1=0.9497  [14s]
+
+  combination 47({'d': 128, 'K': 2, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9471, 0.9304, 0.9612, 0.9325, 0.9526]                                                                                                         
+    mean_macro_f1=0.9447  [14s]
+
+  combination 48({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.945, 0.9427, 0.959, 0.9366, 0.9509]                                                                                                           
+    mean_macro_f1=0.9468  [20s]
+
+  combination 49({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9491, 0.9364, 0.9511, 0.9358, 0.9526]                                                                                                         
+    mean_macro_f1=0.9450  [20s]
+
+  combination 50({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.945, 0.9407, 0.955, 0.9324, 0.9547]                                                                                                           
+    mean_macro_f1=0.9456  [10s]
+
+  combination 51({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.953, 0.9428, 0.9571, 0.9327, 0.9549]                                                                                                          
+    mean_macro_f1=0.9481  [22s]
+
+  combination 52({'d': 64, 'K': 5, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9451, 0.9346, 0.9529, 0.9345, 0.9466]                                                                                                         
+    mean_macro_f1=0.9427  [25s]
+
+  combination 53({'d': 64, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9512, 0.9385, 0.9611, 0.9367, 0.9549]                                                                                                         
+    mean_macro_f1=0.9485  [10s]
+
+  combination 54({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9451, 0.9344, 0.9634, 0.9347, 0.9507]                                                                                                         
+    mean_macro_f1=0.9457  [24s]
+
+  combination 55({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9391, 0.9346, 0.9511, 0.9365, 0.9449]                                                                                                         
+    mean_macro_f1=0.9413  [22s]
+
+  combination 56({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9447, 0.9406, 0.9549, 0.9426, 0.9507]                                                                                                         
+    mean_macro_f1=0.9467  [10s]
+
+  combination 57({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9529, 0.9366, 0.9592, 0.9368, 0.9487]                                                                                                         
+    mean_macro_f1=0.9468  [17s]
+
+  combination 58({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9507, 0.9407, 0.9511, 0.9342, 0.9567]                                                                                                         
+    mean_macro_f1=0.9467  [21s]
+
+  combination 59({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9512, 0.9364, 0.9612, 0.9367, 0.9509]                                                                                                         
+    mean_macro_f1=0.9473  [13s]
+
+  combination 60({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9449, 0.9366, 0.9613, 0.9327, 0.9489]                                                                                                         
+    mean_macro_f1=0.9449  [26s]
+
+  combination 61({'d': 128, 'K': 4, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.945, 0.9407, 0.9693, 0.9407, 0.9549]                                                                                                          
+    mean_macro_f1=0.9501  [18s]
+
+  combination 62({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9471, 0.9408, 0.9571, 0.9365, 0.9465]                                                                                                         
+    mean_macro_f1=0.9456  [10s]
+
+  combination 63({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9387, 0.9384, 0.9553, 0.9365, 0.9488]                                                                                                         
+    mean_macro_f1=0.9435  [18s]
+
+  combination 64({'d': 128, 'K': 2, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.945, 0.9346, 0.9549, 0.9304, 0.9467]                                                                                                          
+    mean_macro_f1=0.9423  [12s]
+
+  combination 65({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.951, 0.9368, 0.9571, 0.9426, 0.9428]                                                                                                          
+    mean_macro_f1=0.9461  [8s]
+
+  combination 66({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9469, 0.9406, 0.9588, 0.9407, 0.9467]                                                                                                         
+    mean_macro_f1=0.9467  [14s]
+
+  combination 67({'d': 128, 'K': 4, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9511, 0.9325, 0.9569, 0.9347, 0.9448]                                                                                                         
+    mean_macro_f1=0.9440  [21s]
+
+  combination 68({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9451, 0.9382, 0.9551, 0.9428, 0.9548]                                                                                                         
+    mean_macro_f1=0.9472  [24s]
+
+  combination 69({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9451, 0.9326, 0.9506, 0.9204, 0.9487]                                                                                                         
+    mean_macro_f1=0.9395  [31s]
+
+  combination 70({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.9511, 0.9405, 0.9695, 0.9366, 0.9527]                                                                                                         
+    mean_macro_f1=0.9501  [13s]
+
+  combination 71({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9492, 0.9424, 0.9632, 0.9343, 0.9509]                                                                                                         
+    mean_macro_f1=0.9480  [15s]
+
+  combination 72({'d': 128, 'K': 3, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.947, 0.943, 0.9549, 0.9408, 0.9547]                                                                                                           
+    mean_macro_f1=0.9481  [15s]
+
+  combination 73({'d': 128, 'K': 5, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9471, 0.9344, 0.9591, 0.9303, 0.9467]                                                                                                         
+    mean_macro_f1=0.9435  [23s]
+
+  combination 74({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9511, 0.9427, 0.9593, 0.9366, 0.9527]                                                                                                         
+    mean_macro_f1=0.9485  [28s]
+
+  combination 75({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9429, 0.9407, 0.9568, 0.9322, 0.9509]                                                                                                         
+    mean_macro_f1=0.9447  [22s]
+
+  combination 76({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9509, 0.9388, 0.9631, 0.9388, 0.9488]                                                                                                         
+    mean_macro_f1=0.9481  [13s]
+
+  combination 77({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.951, 0.9425, 0.9611, 0.9367, 0.9568]                                                                                                          
+    mean_macro_f1=0.9496  [19s]
+
+  combination 78({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9431, 0.9346, 0.9551, 0.9325, 0.9467]                                                                                                         
+    mean_macro_f1=0.9424  [16s]
+
+  combination 79({'d': 64, 'K': 3, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9411, 0.9366, 0.9509, 0.9284, 0.9468]                                                                                                         
+    mean_macro_f1=0.9407  [20s]
+
+  combination 80({'d': 64, 'K': 5, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.001, 'epochs': 700})
+    fold_scores=[0.951, 0.9386, 0.9611, 0.9383, 0.9506]                                                                                                          
+    mean_macro_f1=0.9479  [18s]
+
+  combination 81({'d': 128, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9511, 0.9445, 0.9671, 0.9346, 0.9549]                                                                                                         
+    mean_macro_f1=0.9504  [11s]
+
+  combination 82({'d': 128, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9491, 0.9386, 0.9652, 0.9386, 0.9549]                                                                                                         
+    mean_macro_f1=0.9493  [24s]
+
+  combination 83({'d': 128, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 500})
+    fold_scores=[0.9491, 0.9345, 0.9571, 0.9328, 0.9506]                                                                                                         
+    mean_macro_f1=0.9448  [17s]
+
+  combination 84({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.949, 0.9366, 0.957, 0.9338, 0.9529]                                                                                                           
+    mean_macro_f1=0.9458  [10s]
+
+  combination 85({'d': 64, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9511, 0.9367, 0.9611, 0.9385, 0.9507]                                                                                                         
+    mean_macro_f1=0.9476  [28s]
+
+  combination 86({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9409, 0.9387, 0.9569, 0.9304, 0.9466]                                                                                                         
+    mean_macro_f1=0.9427  [27s]
+
+  combination 87({'d': 64, 'K': 2, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.949, 0.9387, 0.9611, 0.9346, 0.9508]                                                                                                          
+    mean_macro_f1=0.9468  [11s]
+
+  combination 88({'d': 64, 'K': 1, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.945, 0.9408, 0.9531, 0.9345, 0.9488]                                                                                                          
+    mean_macro_f1=0.9444  [7s]
+
+  combination 89({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.945, 0.9387, 0.953, 0.93, 0.9548]                                                                                                             
+    mean_macro_f1=0.9443  [13s]
+
+  combination 90({'d': 64, 'K': 3, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9551, 0.9303, 0.9591, 0.9349, 0.9506]                                                                                                         
+    mean_macro_f1=0.9460  [22s]
+
+  combination 91({'d': 64, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9466, 0.9384, 0.9592, 0.9346, 0.9547]                                                                                                         
+    mean_macro_f1=0.9467  [20s]
+
+  combination 92({'d': 128, 'K': 1, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.9469, 0.9428, 0.9572, 0.9345, 0.9527]                                                                                                         
+    mean_macro_f1=0.9468  [9s]
+
+  combination 93({'d': 128, 'K': 1, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9468, 0.9366, 0.9571, 0.9344, 0.9464]                                                                                                         
+    mean_macro_f1=0.9443  [8s]
+
+  combination 94({'d': 64, 'K': 6, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9447, 0.9446, 0.9613, 0.9386, 0.9568]                                                                                                         
+    mean_macro_f1=0.9492  [20s]
+
+  combination 95({'d': 128, 'K': 2, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.9449, 0.9366, 0.9593, 0.9303, 0.9427]                                                                                                         
+    mean_macro_f1=0.9428  [12s]
+
+  combination 96({'d': 128, 'K': 1, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.943, 0.9346, 0.9592, 0.9364, 0.9447]                                                                                                          
+    mean_macro_f1=0.9436  [8s]
+
+  combination 97({'d': 128, 'K': 6, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700})
+    fold_scores=[0.9489, 0.9265, 0.9529, 0.9302, 0.9467]                                                                                                         
+    mean_macro_f1=0.9410  [26s]
+
+  combination 98({'d': 128, 'K': 4, 'dropout': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300})
+    fold_scores=[0.945, 0.9306, 0.9551, 0.9303, 0.9508]                                                                                                          
+    mean_macro_f1=0.9423  [19s]
+
+  combination 99({'d': 64, 'K': 1, 'dropout': 0.3, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500})
+    fold_scores=[0.947, 0.9407, 0.9508, 0.9326, 0.9507]                                                                                                          
+    mean_macro_f1=0.9444  [8s]
+
+  combination 100({'d': 64, 'K': 4, 'dropout': 0.3, 'lr': 0.001, 'wd': 0.001, 'epochs': 300})
+    fold_scores=[0.9491, 0.9366, 0.9611, 0.9344, 0.9547]                                                                                                         
+    mean_macro_f1=0.9472  [20s]
+  Saved -> results/nc\acm\cv_fold_scores.csv
+[hparam] Best params saved -> results/nc\acm\best_params.json
+[NC hparam] best_val_macro=0.9513  params={'d': 128, 'K': 5, 'dropout': 0.5, 'lr': 0.005, 'wd': 0.001, 'epochs': 500}  total=1812s
+loss=0.0141: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.93it/s]
+  Model saved → results/nc\acm\final_model_seed0.pt
+loss=0.0131: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.91it/s]
+  Model saved → results/nc\acm\final_model_seed1.pt
+loss=0.0247: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.91it/s]
+  Model saved → results/nc\acm\final_model_seed2.pt
+loss=0.0167: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.97it/s]
+  Model saved → results/nc\acm\final_model_seed3.pt
+loss=0.0185: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.60it/s]
+  Model saved → results/nc\acm\final_model_seed4.pt
+loss=0.0210: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.94it/s]
+  Model saved → results/nc\acm\final_model_seed5.pt
+loss=0.0174: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.92it/s]
+  Model saved → results/nc\acm\final_model_seed6.pt
+loss=0.0157: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.96it/s]
+  Model saved → results/nc\acm\final_model_seed7.pt
+loss=0.0134: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 28.93it/s]
+  Model saved → results/nc\acm\final_model_seed8.pt
+loss=0.0142: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 500/500 [00:17<00:00, 29.00it/s]
+  Model saved → results/nc\acm\final_model_seed9.pt
+  Per-run results → results/nc\acm\per_run_results.csv
+  Summary → results/nc\acm\summary.csv
+
+  acm NC  (n=10 seeds)
+  Macro-F1 : 0.9330 ± 0.0089
+  Micro-F1 : 0.9324 ± 0.0089
+  Accuracy : 0.9324 ± 0.0089
+  AUC (OvR): 0.9904 ± 0.0023

@@ -78,7 +78,7 @@ def _detect_task(dataset_path):
     sp = dataset_path / 'summary.csv'
     if not sp.exists():
         return None
-    df = pd.read_csv(sp)
+    df = pd.read_csv(sp, on_bad_lines='skip')
     cols = df.columns.tolist()
     if 'task' in cols:
         return df['task'].values[0]
@@ -129,7 +129,7 @@ def plot_nc_bar(datasets):
         sp = RESULTS_ROOT / 'nc' / ds / 'summary.csv'
         if not sp.exists():
             continue
-        df = pd.read_csv(sp)
+        df = pd.read_csv(sp, on_bad_lines='skip')
         for m, label in FMT_NC.items():
             mean_col = f'{m}_mean'
             sd_col   = f'{m}_sd'
@@ -169,7 +169,7 @@ def plot_nc_box(datasets):
         pp = RESULTS_ROOT / 'nc' / ds / 'per_run_results.csv'
         if not pp.exists():
             continue
-        df = pd.read_csv(pp)
+        df = pd.read_csv(pp, on_bad_lines='skip')
         for m, label in FMT_NC.items():
             col = f'test_{m}'
             if col not in df.columns:
@@ -234,6 +234,8 @@ def plot_nc_curves(datasets):
 
             for cp in csvs:
                 df = pd.read_csv(cp)
+                if col not in df.columns:
+                    continue
                 ax.plot(df['epoch'], df[col], alpha=0.15, linewidth=0.5, color=color)
 
             means = [np.mean(ep_data[e]) for e in eps_sorted]
@@ -260,7 +262,7 @@ def plot_nc_cv_heatmap(datasets):
         if not cvp.exists():
             print(f"  [skip] {ds}: no cv_fold_scores.csv")
             continue
-        df = pd.read_csv(cvp)
+        df = pd.read_csv(cvp, on_bad_lines='skip')
         val_col = [c for c in df.columns if 'val' in c.lower() and c != 'val_nmi']
         if not val_col:
             val_col = [c for c in df.columns if c.startswith('val_')]
@@ -301,7 +303,7 @@ def plot_lp_bar(datasets):
         sp = RESULTS_ROOT / 'lp' / ds / 'summary.csv'
         if not sp.exists():
             continue
-        df = pd.read_csv(sp)
+        df = pd.read_csv(sp, on_bad_lines='skip')
         for m, label in FMT_LP.items():
             mean_col = f'{m}_mean'
             sd_col   = f'{m}_sd'
@@ -353,7 +355,7 @@ def plot_lp_box(datasets):
         pp = RESULTS_ROOT / 'lp' / ds / 'per_run_results.csv'
         if not pp.exists():
             continue
-        df = pd.read_csv(pp)
+        df = pd.read_csv(pp, on_bad_lines='skip')
         for col, label in zip(metric_cols, metric_labels):
             if col in df.columns:
                 for v in df[col].dropna().values:
@@ -398,7 +400,7 @@ def plot_cl_bar(datasets):
         sp = RESULTS_ROOT / 'clustering' / ds / 'summary.csv'
         if not sp.exists():
             continue
-        df = pd.read_csv(sp)
+        df = pd.read_csv(sp, on_bad_lines='skip')
         for m, label in FMT_CL.items():
             mean_col = f'{m}_mean'
             sd_col   = f'{m}_sd'
@@ -438,7 +440,7 @@ def plot_cl_box(datasets):
         pp = RESULTS_ROOT / 'clustering' / ds / 'per_run_results.csv'
         if not pp.exists():
             continue
-        df = pd.read_csv(pp)
+        df = pd.read_csv(pp, on_bad_lines='skip')
         for m, label in FMT_CL.items():
             if m in df.columns:
                 for v in df[m].dropna().values:
@@ -515,15 +517,16 @@ def plot_cl_alpha(datasets):
         if not ap.exists():
             print(f"  [skip] {ds}: no alpha_weights.csv")
             continue
-        df = pd.read_csv(ap, header=None)
-        n_seeds = len(df)
-        n_rels = len(df.columns) - 1
-        if n_rels == 0:
+        df = pd.read_csv(ap)
+        alpha_cols = [c for c in df.columns if c.startswith('alpha_')]
+        if not alpha_cols:
             print(f"  [skip] {ds}: no alpha columns")
             continue
 
-        data_mat = df.iloc[:, 1:].values.T
-        rel_names = [f'rel_{i}' for i in range(n_rels)]
+        rel_names = [c.replace('alpha_', '') for c in alpha_cols]
+        n_seeds = len(df)
+        n_rels = len(alpha_cols)
+        data_mat = df[alpha_cols].values.T
 
         fig, (ax1, ax2) = plt.subplots(
             1, 2, figsize=(10 + 0.4 * n_rels, 3.5 + 0.25 * n_seeds),
@@ -570,7 +573,7 @@ def plot_rec_bar(datasets):
         sp = RESULTS_ROOT / 'recommendation' / ds / 'summary.csv'
         if not sp.exists():
             continue
-        df = pd.read_csv(sp)
+        df = pd.read_csv(sp, on_bad_lines='skip')
         for col in df.columns:
             m = re.match(r'^(recall|ndcg|hit|precision|mrr)@(\d+)_mean$', col)
             if m:
@@ -611,7 +614,7 @@ def plot_rec_box(datasets):
         pp = RESULTS_ROOT / 'recommendation' / ds / 'per_run_results.csv'
         if not pp.exists():
             continue
-        df = pd.read_csv(pp)
+        df = pd.read_csv(pp, on_bad_lines='skip')
         for col in df.columns:
             m = re.match(r'^(recall|ndcg|hit|precision|mrr)@(\d+)$', col)
             if m:
@@ -659,7 +662,7 @@ def plot_all_summary_table():
             sp = task_dir / ds / 'summary.csv'
             if not sp.exists():
                 continue
-            df = pd.read_csv(sp)
+            df = pd.read_csv(sp, on_bad_lines='skip')
             task_label = {'nc': 'NC', 'lp': 'LP', 'cl': 'CL', 'rec': 'REC'}[task]
             if task == 'nc':
                 for m in ['macro_f1', 'micro_f1', 'accuracy', 'auc']:

@@ -1,0 +1,75 @@
+\begin{landscape}
+\begin{table}[h]
+\centering
+\caption{Full Preservation Metrics — ACM (Supplementary)}
+\label{tab:supp_acm}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{Value} & \textbf{Interpretation} \\
+\midrule
+CKA (Feat → H0) & 0.263668 & Projection stage \\
+CKA (H0 → Z_final) & 0.955986 & Diffusion+fUSION \\
+CKA (Feat → Z_final) & 0.219441 & End-to-end \\
+Laplacian Preservation & 0.454882 & Higher = better \\
+Degree Similarity & 1.000000 & JSD-based \\
+Spectral Sim (A_homo vs ref) & 0.999998 & Top-k eigenvalues \\
+\midrule
+\multicolumn{3}{l}{\textit{Feature Reconstruction}} \\
+MSE & 0.031738 & Lower = better \\
+MAE & 0.068475 & Lower = better \\
+R² & 0.053080 & Higher = better \\
+Correlation & 0.508454 & Higher = better \\
+\midrule
+\multicolumn{3}{l}{\textit{Embedding Statistics}} \\
+Rank & 53 &  \\
+Effective Rank & 11.377071 &  \\
+Participation Ratio & 5.486700 & Higher = more isotropic \\
+Mean Norm & 2.845270 &  \\
+Std Norm & 0.742557 &  \\
+\midrule
+\multicolumn{3}{l}{\textit{Relation Recoverability}} \\
+Accuracy & 1.000000 & Higher = better preserved \\
+Macro F1 & 1.000000 & Higher = better preserved \\
+\midrule
+\multicolumn{3}{l}{\textit{Compression}} \\
+Hetero Edges & 26012 &  \\
+Homo Edges & 26012 &  \\
+Compression Ratio & 1.000000 & Higher = more compression \\
+\midrule
+\multicolumn{3}{l}{\textit{Downstream Preservation}} \\
+X_orig Macro F1 & 0.896570 &  \\
+H0 Macro F1 & 0.922656 &  \\
+Z_final Macro F1 & 0.960866 &  \\
+DPS & 1.071714 & Z_final F1 / X_orig F1 \\
+\midrule
+\multicolumn{3}{l}{\textit{Spectral Embedding}} \\
+Eigenvector CKA & 1.000000 &  \\
+Eigenvector Cosine & 0.834485 &  \\
+\midrule
+\multicolumn{3}{l}{\textit{Meta-path Spectral}} \\
+PAP spectral & nan &  \\
+PSP spectral & 0.000000 &  \\
+\midrule
+\multicolumn{3}{l}{\textit{Meta-path Neighborhood}} \\
+PAP kNN overlap & 0.013900 &  \\
+PSP kNN overlap & 0.017400 &  \\
+\midrule
+\multicolumn{3}{l}{\textit{Meta-path Classification}} \\
+PAP AUC & 0.610310 &  \\
+PAP F1 & 0.583979 &  \\
+PSP AUC & 0.591769 &  \\
+PSP F1 & 0.686671 &  \\
+\midrule
+\multicolumn{3}{l}{\textit{Meta-path Diversity}} \\
+Diversity & 0.967687 & Higher = more diverse \\
+PAP CKA & 0.043824 &  \\
+PSP CKA & 0.483500 &  \\
+\midrule
+\multicolumn{3}{l}{\textit{MPS (Meta-path Preservation Score)}} \\
+PAP MPS & nan & 0.4*AUC + 0.3*kNN + 0.3*Spectral \\
+PSP MPS & 0.241928 & 0.4*AUC + 0.3*kNN + 0.3*Spectral \\
+Average MPS & 0.241928 &  \\
+\bottomrule
+\end{tabular}
+\end{table}
+\end{landscape}

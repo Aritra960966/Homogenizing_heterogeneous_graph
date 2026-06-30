@@ -25,7 +25,7 @@ drive-download-*/
 .idea/
 
 # Results
-results/
+results/*pt
 
 project_progress.md 
 causal_drug.pdf
