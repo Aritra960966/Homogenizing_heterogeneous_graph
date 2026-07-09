@@ -1,0 +1,42 @@
+\begin{table}[h]
+\centering
+\caption{Homogenization Preservation Analysis — DBLP}
+\label{tab:preservation_dblp}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+\multicolumn{2}{l}{\textit{Semantic Preservation}} \\
+CKA (features $\rightarrow$ H$^{(0)}$) & 0.3622 \\
+CKA (H$^{(0)} \rightarrow$ Z$_{\mathrm{final}}$) & 0.9687 \\
+CKA (features $\rightarrow$ Z$_{\mathrm{final}}$) & 0.3019 \\
+Cosine similarity (features $\rightarrow$ Z$_{\mathrm{final}}$) & -0.0040 $\pm$ 0.0752 \\
+\midrule
+\multicolumn{2}{l}{\textit{Neighbourhood Preservation}} \\
+k-NN overlap (k10) & 0.5275 \\
+k-NN overlap (k20) & 0.6828 \\
+k-NN overlap (k5) & 0.4000 \\
+\midrule
+\multicolumn{2}{l}{\textit{Structural Preservation}} \\
+Spectral similarity (A$_{\mathrm{homo}}$ vs ref) & 1.0000 \\
+Laplacian preservation & 0.6946 \\
+Degree distribution similarity & 1.0000 \\
+\midrule
+\multicolumn{2}{l}{\textit{Relation Connectivity Preservation}} \\
+author->paper (lift = connected $-$ random) & 0.7679 / lift=+0.4136 \\
+paper->author (lift = connected $-$ random) & 0.7749 / lift=+0.4064 \\
+term->paper (lift = connected $-$ random) & 0.5374 / lift=+0.1793 \\
+paper->term (lift = connected $-$ random) & 0.5424 / lift=+0.1778 \\
+conf->paper (lift = connected $-$ random) & 0.7413 / lift=+0.3849 \\
+paper->conf (lift = connected $-$ random) & 0.7434 / lift=+0.3823 \\
+\midrule
+\multicolumn{2}{l}{\textit{Relation CKA to Z$_{\mathrm{final}}$}} \\
+author->paper & 0.7486 \\
+paper->author & 0.7486 \\
+term->paper & 0.7234 \\
+paper->term & 0.7234 \\
+conf->paper & 0.7585 \\
+paper->conf & 0.7585 \\
+\bottomrule
+\end{tabular}
+\end{table}

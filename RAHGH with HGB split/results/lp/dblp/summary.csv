@@ -1,0 +1,2 @@
+dataset,task,auc_mean,auc_sd,ap_mean,ap_sd,hits@1_mean,hits@3_mean,hits@10_mean,hits@1_sd,hits@3_sd,hits@10_sd,n_seeds,best_hp_d,best_hp_K,best_hp_dropout,best_hp_dropout_gnn,best_hp_lr,best_hp_wd,best_hp_epochs,best_hp_hidden,best_hp_label_smoothing,best_hp_warmup
+dblp,lp,0.8211,0.0271,0.4125,0.0498,0.0598,0.165,0.4207,0.0122,0.0335,0.0742,10,128,3,0.3,0.5,0.001,0.0001,300,64,0.0,10

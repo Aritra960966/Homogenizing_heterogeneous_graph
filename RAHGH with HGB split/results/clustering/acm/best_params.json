@@ -1,0 +1,13 @@
+{
+  "acm_cl": {
+    "d": 256,
+    "K": 3,
+    "dropout": 0.3,
+    "lr": 0.005,
+    "wd": 0.001,
+    "epochs": 100,
+    "hidden": 128,
+    "cl_loss": "reconstruction",
+    "cl_temp": 0.1
+  }
+}

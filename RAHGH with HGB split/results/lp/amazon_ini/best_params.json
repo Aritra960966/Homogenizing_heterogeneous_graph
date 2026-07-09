@@ -1,0 +1,15 @@
+{
+  "amazon_ini_lp": {
+    "d": 128,
+    "d_prime": 32,
+    "K": 5,
+    "dropout": 0.1,
+    "dropout_gnn": 0.5,
+    "lr": 0.001,
+    "wd": 0.0001,
+    "epochs": 400,
+    "hidden": 128,
+    "label_smoothing": 0.0,
+    "warmup": 10
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "dataset": "imdb",
+  "N": 9890,
+  "Nt": 3454,
+  "n_sample": 200,
+  "alpha": [
+    0.307319,
+    0.307319,
+    0.192681,
+    0.192681
+  ],
+  "rel_names": [
+    "movie\u2192dir",
+    "dir\u2192movie",
+    "movie\u2192act",
+    "act\u2192movie"
+  ],
+  "elapsed_s": 49.546472,
+  "cosine": {
+    "orig_to_H0": {
+      "mean": 0.037862,
+      "median": 0.028855,
+      "std": 0.119889,
+      "pct_positive": 0.61
+    },
+    "H0_to_Zf": {
+      "mean": -0.04344,
+      "median": -0.059893,
+      "std": 0.208268,
+      "pct_positive": 0.41
+    },
+    "orig_to_Zf": {
+      "mean": -0.006462,
+      "median": -0.001671,
+      "std": 0.126193,
+      "pct_positive": 0.475
+    }
+  },
+  "cka": {
+    "orig_to_H0": 0.160458,
+    "H0_to_Zf": 0.880792,
+    "orig_to_Zf": 0.102703
+  },
+  "neighbourhood": {
+    "k5": 0.265,
+    "k10": 0.341,
+    "k20": 0.487
+  },
+  "spectral": {
+    "homo_vs_ref": 0.325308,
+    "homo_per_rel": {
+      "movie\u2192dir": 0.0,
+      "dir\u2192movie": 0.0,
+      "movie\u2192act": 0.0,
+      "act\u2192movie": 0.0
+    }
+  },
+  "laplacian_preservation": 0.425412,
+  "degree_sim": 1.0,
+  "relation_connectivity": {
+    "movie\u2192dir": {
+      "connected_sim": 0.308181,
+      "random_sim": 0.322498,
+      "lift": -0.014317
+    },
+    "dir\u2192movie": {
+      "connected_sim": 0.308181,
+      "random_sim": 0.289624,
+      "lift": 0.018557
+    },
+    "movie\u2192act": {
+      "connected_sim": -0.00454,
+      "random_sim": 0.3065,
+      "lift": -0.31104
+    },
+    "act\u2192movie": {
+      "connected_sim": -0.007395,
+      "random_sim": 0.305844,
+      "lift": -0.313239
+    }
+  },
+  "relation_cka": {
+    "cka_to_final": {
+      "movie\u2192dir": 0.405356,
+      "dir\u2192movie": 0.405356,
+      "movie\u2192act": 0.263538,
+      "act\u2192movie": 0.263538
+    },
+    "pairwise_cka": {
+      "movie\u2192dir_vs_dir\u2192movie": 1.0,
+      "movie\u2192dir_vs_movie\u2192act": 0.299955,
+      "movie\u2192dir_vs_act\u2192movie": 0.299955,
+      "dir\u2192movie_vs_movie\u2192act": 0.299955,
+      "dir\u2192movie_vs_act\u2192movie": 0.299955,
+      "movie\u2192act_vs_act\u2192movie": 1.0
+    }
+  }
+}

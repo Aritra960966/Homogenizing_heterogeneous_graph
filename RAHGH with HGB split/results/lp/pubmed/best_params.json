@@ -1,0 +1,15 @@
+{
+  "pubmed_lp": {
+    "d": 64,
+    "d_prime": 32,
+    "K": 6,
+    "dropout": 0.1,
+    "dropout_gnn": 0.1,
+    "lr": 0.005,
+    "wd": 0.0001,
+    "epochs": 600,
+    "hidden": 64,
+    "label_smoothing": 0.0,
+    "warmup": 10
+  }
+}

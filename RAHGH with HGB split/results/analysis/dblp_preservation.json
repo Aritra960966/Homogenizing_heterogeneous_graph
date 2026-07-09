@@ -1,0 +1,125 @@
+{
+  "dataset": "dblp",
+  "N": 27303,
+  "Nt": 4057,
+  "n_sample": 200,
+  "alpha": [
+    0.166424,
+    0.166424,
+    0.1649,
+    0.1649,
+    0.168676,
+    0.168676
+  ],
+  "rel_names": [
+    "author\u2192paper",
+    "paper\u2192author",
+    "term\u2192paper",
+    "paper\u2192term",
+    "conf\u2192paper",
+    "paper\u2192conf"
+  ],
+  "elapsed_s": 12.331089,
+  "cosine": {
+    "orig_to_H0": {
+      "mean": 0.014558,
+      "median": 0.007842,
+      "std": 0.08103,
+      "pct_positive": 0.55
+    },
+    "H0_to_Zf": {
+      "mean": 0.041774,
+      "median": 0.040965,
+      "std": 0.057289,
+      "pct_positive": 0.765
+    },
+    "orig_to_Zf": {
+      "mean": -0.00405,
+      "median": -0.006455,
+      "std": 0.075199,
+      "pct_positive": 0.46
+    }
+  },
+  "cka": {
+    "orig_to_H0": 0.362233,
+    "H0_to_Zf": 0.968738,
+    "orig_to_Zf": 0.301912
+  },
+  "neighbourhood": {
+    "k5": 0.4,
+    "k10": 0.5275,
+    "k20": 0.68275
+  },
+  "spectral": {
+    "homo_vs_ref": 1.0,
+    "homo_per_rel": {
+      "author\u2192paper": -1.664523,
+      "paper\u2192author": -1.664523,
+      "term\u2192paper": -1.664523,
+      "paper\u2192term": -1.664523,
+      "conf\u2192paper": -1.664523,
+      "paper\u2192conf": -1.664523
+    }
+  },
+  "laplacian_preservation": 0.694633,
+  "degree_sim": 1.0,
+  "relation_connectivity": {
+    "author\u2192paper": {
+      "connected_sim": 0.767889,
+      "random_sim": 0.35429,
+      "lift": 0.413599
+    },
+    "paper\u2192author": {
+      "connected_sim": 0.774917,
+      "random_sim": 0.368508,
+      "lift": 0.406409
+    },
+    "term\u2192paper": {
+      "connected_sim": 0.537362,
+      "random_sim": 0.358016,
+      "lift": 0.179345
+    },
+    "paper\u2192term": {
+      "connected_sim": 0.542394,
+      "random_sim": 0.364603,
+      "lift": 0.177791
+    },
+    "conf\u2192paper": {
+      "connected_sim": 0.741332,
+      "random_sim": 0.356446,
+      "lift": 0.384886
+    },
+    "paper\u2192conf": {
+      "connected_sim": 0.743355,
+      "random_sim": 0.361089,
+      "lift": 0.382267
+    }
+  },
+  "relation_cka": {
+    "cka_to_final": {
+      "author\u2192paper": 0.748609,
+      "paper\u2192author": 0.748609,
+      "term\u2192paper": 0.723426,
+      "paper\u2192term": 0.723426,
+      "conf\u2192paper": 0.758531,
+      "paper\u2192conf": 0.758531
+    },
+    "pairwise_cka": {
+      "author\u2192paper_vs_paper\u2192author": 1.0,
+      "author\u2192paper_vs_term\u2192paper": 0.600089,
+      "author\u2192paper_vs_paper\u2192term": 0.600089,
+      "author\u2192paper_vs_conf\u2192paper": 0.925115,
+      "author\u2192paper_vs_paper\u2192conf": 0.925115,
+      "paper\u2192author_vs_term\u2192paper": 0.600089,
+      "paper\u2192author_vs_paper\u2192term": 0.600089,
+      "paper\u2192author_vs_conf\u2192paper": 0.925115,
+      "paper\u2192author_vs_paper\u2192conf": 0.925115,
+      "term\u2192paper_vs_paper\u2192term": 1.0,
+      "term\u2192paper_vs_conf\u2192paper": 0.747342,
+      "term\u2192paper_vs_paper\u2192conf": 0.747342,
+      "paper\u2192term_vs_conf\u2192paper": 0.747342,
+      "paper\u2192term_vs_paper\u2192conf": 0.747342,
+      "conf\u2192paper_vs_paper\u2192conf": 1.0
+    }
+  }
+}

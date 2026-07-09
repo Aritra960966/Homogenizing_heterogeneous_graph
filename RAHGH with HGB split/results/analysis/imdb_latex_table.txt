@@ -1,0 +1,38 @@
+\begin{table}[h]
+\centering
+\caption{Homogenization Preservation Analysis — IMDB}
+\label{tab:preservation_imdb}
+\begin{tabular}{lc}
+\toprule
+\textbf{Metric} & \textbf{Score} \\
+\midrule
+\multicolumn{2}{l}{\textit{Semantic Preservation}} \\
+CKA (features $\rightarrow$ H$^{(0)}$) & 0.1605 \\
+CKA (H$^{(0)} \rightarrow$ Z$_{\mathrm{final}}$) & 0.8808 \\
+CKA (features $\rightarrow$ Z$_{\mathrm{final}}$) & 0.1027 \\
+Cosine similarity (features $\rightarrow$ Z$_{\mathrm{final}}$) & -0.0065 $\pm$ 0.1262 \\
+\midrule
+\multicolumn{2}{l}{\textit{Neighbourhood Preservation}} \\
+k-NN overlap (k10) & 0.3410 \\
+k-NN overlap (k20) & 0.4870 \\
+k-NN overlap (k5) & 0.2650 \\
+\midrule
+\multicolumn{2}{l}{\textit{Structural Preservation}} \\
+Spectral similarity (A$_{\mathrm{homo}}$ vs ref) & 0.3253 \\
+Laplacian preservation & 0.4254 \\
+Degree distribution similarity & 1.0000 \\
+\midrule
+\multicolumn{2}{l}{\textit{Relation Connectivity Preservation}} \\
+movie->dir (lift = connected $-$ random) & 0.3082 / lift=-0.0143 \\
+dir->movie (lift = connected $-$ random) & 0.3082 / lift=+0.0186 \\
+movie->act (lift = connected $-$ random) & -0.0045 / lift=-0.3110 \\
+act->movie (lift = connected $-$ random) & -0.0074 / lift=-0.3132 \\
+\midrule
+\multicolumn{2}{l}{\textit{Relation CKA to Z$_{\mathrm{final}}$}} \\
+movie->dir & 0.4054 \\
+dir->movie & 0.4054 \\
+movie->act & 0.2635 \\
+act->movie & 0.2635 \\
+\bottomrule
+\end{tabular}
+\end{table}
