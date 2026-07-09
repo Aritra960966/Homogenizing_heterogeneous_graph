@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import time, os, csv
 from torch.optim import Adam
+from tqdm import tqdm
 
 from ..model.rahgh import (
     build_encoder, build_edge_index_dict, build_node_type_indices,
@@ -131,11 +132,14 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
 
     rng        = np.random.default_rng(seed)
     epoch_rows = []
-    best_rec   = 0.0
+    best_score = 0.0
     best_sd    = None
+    stall      = 0
     t0         = time.time()
+    max_epochs = best_params['epochs']
+    pbar = tqdm(range(1, max_epochs + 1), desc=f"REC seed={seed}", leave=False)
 
-    for ep in range(1, best_params['epochs'] + 1):
+    for ep in pbar:
         model.train(); opt.zero_grad()
         emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
 
@@ -148,17 +152,27 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
         loss.backward(); opt.step()
 
         epoch_rows.append({'epoch': ep, 'bpr_loss': round(loss.item(), 6)})
+        pbar.set_postfix(loss=f"{loss.item():.4f}")
 
-        if ep % 50 == 0 or ep == best_params['epochs']:
+        if ep % 50 == 0 or ep == max_epochs:
             model.eval()
             with torch.no_grad():
                 emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
                 agg = compute_rec_metrics(emb_v, te20_edges, user_pos,
                                            all_items, [20], device)
                 rec = agg.get('recall@20', 0.0)
-            if rec > best_rec:
-                best_rec = rec
+                ndcg = agg.get('ndcg@20', 0.0)
+                score = (rec + ndcg) / 2
+            pbar.set_postfix(loss=f"{loss.item():.4f}", rec20=f"{rec:.4f}", ndcg20=f"{ndcg:.4f}")
+            if score > best_score:
+                best_score = score
                 best_sd  = {k: v.clone() for k, v in model.state_dict().items()}
+                stall = 0
+            else:
+                stall += 1
+                if stall >= 10:
+                    pbar.set_description(f"REC seed={seed} early stop @{ep}/{max_epochs} best_rec20={rec:.4f} ndcg20={ndcg:.4f}")
+                    break
 
     model.load_state_dict(best_sd); model.eval()
     with torch.no_grad():

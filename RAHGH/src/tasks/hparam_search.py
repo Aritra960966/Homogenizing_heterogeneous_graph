@@ -179,7 +179,7 @@ def _run_fold_cl(data, params, tr_idx, va_idx, device, head='gcn',
 
 def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20,
                   x_dict=None, edge_index_dict=None, node_type_indices=None):
-    from .recommendation import bpr_loss, recall_at_k
+    from .recommendation import bpr_loss, recall_at_k, compute_rec_metrics
 
     # Build inputs using only training edges to prevent leakage
     fold_x_dict = rebuild_user_features(data, tr_edges, device)
@@ -194,10 +194,13 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
     user_pos = {}
     for u, i in tr_edges: user_pos.setdefault(u, set()).add(i)
 
-    best_rec, best_sd = 0.0, None
+    best_score, best_metrics = 0.0, {}
+    best_sd, stall = None, 0
     rng = np.random.default_rng(0)
-
-    for ep in range(1, params['epochs'] + 1):
+    max_epochs = params['epochs']
+    K_ALL = [10, 20, 50]
+    pbar = tqdm(range(1, max_epochs + 1), desc="    REC fold", leave=False)
+    for ep in pbar:
         model.train()
         opt.zero_grad()
         emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
@@ -208,15 +211,28 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
         loss.backward()
         opt.step()
 
-        if ep % 50 == 0 or ep == params['epochs']:
+        if ep % 50 == 0 or ep == max_epochs:
             model.eval()
             with torch.no_grad():
                 emb_v, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
-            rec = recall_at_k(emb_v, va_edges, user_pos, all_items, K_rec, device)
-            best_rec = max(best_rec, rec)
+            agg = compute_rec_metrics(emb_v, va_edges, user_pos, all_items, K_ALL, device)
+            r20 = agg.get('recall@20', 0.0)
+            n20 = agg.get('ndcg@20', 0.0)
+            score = (r20 + n20) / 2
+            pbar.set_postfix(loss=f"{loss.item():.4f}", r10=f"{agg.get('recall@10',0):.3f}",
+                             r20=f"{r20:.3f}", r50=f"{agg.get('recall@50',0):.3f}")
+            if score > best_score:
+                best_score = score
+                best_metrics = agg.copy()
+                stall = 0
+            else:
+                stall += 1
+                if stall >= PATIENCE:
+                    pbar.set_description(f"    REC fold early stop @{ep}/{max_epochs} best_r20={r20:.4f} n20={n20:.4f}")
+                    break
 
     del model
-    return best_rec
+    return best_score, best_metrics
 
 
 def _run_fold_lp(data, tr_edges, va_edges, te_edges, params, device, head='gcn', neg_ratio=5,
@@ -424,21 +440,46 @@ def hparam_search_rec(data, target_edges, seed=42, out_dir='results/recommendati
     cv_rows = []
     best_params, best_mean = None, 0.0
 
+    n_total = len(combos) * N_FOLDS
+    print(f"\n  Hyperparameter search: {len(combos)} combos × {N_FOLDS} folds = {n_total} runs", flush=True)
+    t0_hp = time.time()
     for ci, params in enumerate(combos):
-        fold_recs = []
-        for fold, (tr_fold, va_fold) in enumerate(kf.split(tr80_edges)):
-            rec = _run_fold_rec(data, tr80_edges[tr_fold], tr80_edges[va_fold],
-                                params, device, head=head,
-                                K_rec=params.get('K_rec', 20))
-            fold_recs.append(rec)
-            cv_rows.append({'combo_id': ci, 'fold': fold, 'val_recall': round(rec, 4),
+        t_combo = time.time()
+        print(f"\n  combination {ci+1} {params}", flush=True)
+        fold_scores = []
+        fold_iter = tqdm(kf.split(tr80_edges), desc=f"    fold", total=N_FOLDS, leave=False)
+        for fold, (tr_fold, va_fold) in enumerate(fold_iter):
+            score, metrics = _run_fold_rec(data, tr80_edges[tr_fold], tr80_edges[va_fold],
+                                           params, device, head=head,
+                                           K_rec=params.get('K_rec', 20))
+            fold_scores.append(score)
+            r10 = metrics.get('recall@10', 0); n10 = metrics.get('ndcg@10', 0)
+            r20 = metrics.get('recall@20', 0); n20 = metrics.get('ndcg@20', 0)
+            r50 = metrics.get('recall@50', 0); n50 = metrics.get('ndcg@50', 0)
+            fold_iter.set_postfix(r10=f"{r10:.3f}", r20=f"{r20:.3f}", r50=f"{r50:.3f}")
+            cv_rows.append({'combo_id': ci, 'fold': fold,
+                            'val_recall@10': round(r10, 4), 'val_ndcg@10': round(n10, 4),
+                            'val_recall@20': round(r20, 4), 'val_ndcg@20': round(n20, 4),
+                            'val_recall@50': round(r50, 4), 'val_ndcg@50': round(n50, 4),
                             **{f'hp_{k}': v for k, v in params.items()}})
-        mean_rec = float(np.mean(fold_recs))
-        if mean_rec > best_mean: best_mean, best_params = mean_rec, copy.deepcopy(params)
+        mean_score = float(np.mean(fold_scores))
+        elapsed = time.time() - t_combo
+        combo_rows = [r for r in cv_rows if r['combo_id'] == ci]
+        if combo_rows:
+            mr10 = np.mean([r['val_recall@10'] for r in combo_rows])
+            mn10 = np.mean([r['val_ndcg@10'] for r in combo_rows])
+            mr20 = np.mean([r['val_recall@20'] for r in combo_rows])
+            mn20 = np.mean([r['val_ndcg@20'] for r in combo_rows])
+            mr50 = np.mean([r['val_recall@50'] for r in combo_rows])
+            mn50 = np.mean([r['val_ndcg@50'] for r in combo_rows])
+            print(f"    fold_scores={[round(s, 4) for s in fold_scores]}")
+            print(f"    mean_score={mean_score:.4f}  r10={mr10:.4f} n10={mn10:.4f}  r20={mr20:.4f} n20={mn20:.4f}  r50={mr50:.4f} n50={mn50:.4f}  [{elapsed:.0f}s]", flush=True)
+        if mean_score > best_mean: best_mean, best_params = mean_score, copy.deepcopy(params)
 
+    total_hp = time.time() - t0_hp
     _write_csv(cv_rows, os.path.join(out_dir, 'cv_fold_scores.csv'))
     _save_best_params(best_params, data.get('name', ''), 'rec', out_dir)
-    print(f"[REC hparam] best_val_recall@K={best_mean:.4f}  params={best_params}")
+    print(f"[REC hparam] best_val_recall@K={best_mean:.4f}  params={best_params}  total={total_hp:.0f}s", flush=True)
     return best_params, tr80_edges, te20_edges
 
 
