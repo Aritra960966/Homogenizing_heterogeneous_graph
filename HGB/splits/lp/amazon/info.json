@@ -1,0 +1,13 @@
+{
+  "dataset": "amazon",
+  "task": "lp",
+  "n_edges": 69315,
+  "n_train": 56145,
+  "n_val": 6238,
+  "n_test": 6932,
+  "tr_frac": 0.81,
+  "va_frac": 0.09,
+  "te_frac": 0.1,
+  "target_relation_idx": 0,
+  "seed": 42
+}

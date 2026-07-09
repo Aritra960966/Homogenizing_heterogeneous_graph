@@ -1,0 +1,13 @@
+{
+  "dataset": "dblp",
+  "task": "nc",
+  "n_total": 4057,
+  "n_train": 974,
+  "n_val": 243,
+  "n_test": 2840,
+  "tr_frac": 0.24,
+  "va_frac": 0.06,
+  "te_frac": 0.7,
+  "n_classes": 4,
+  "seed": 42
+}

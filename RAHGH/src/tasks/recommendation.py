@@ -103,14 +103,17 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
     d       = best_params['d']
     K_list  = list(K_list)
 
-    # Hold out 10% of training edges for validation
-    rng_split = np.random.default_rng(seed + 999)
-    n_tr = len(tr80_edges)
-    n_va = int(0.1 * n_tr)
-    va_idx = rng_split.choice(n_tr, n_va, replace=False)
-    tr_mask = np.ones(n_tr, dtype=bool)
-    tr_mask[va_idx] = False
-    tr_edges = tr80_edges[tr_mask]
+    # Use HGB val edges if available, otherwise hold out 10% of training edges
+    if data.get('val_edges') is not None and len(data['val_edges']) > 0:
+        tr_edges = tr80_edges
+    else:
+        rng_split = np.random.default_rng(seed + 999)
+        n_tr = len(tr80_edges)
+        n_va = int(0.1 * n_tr)
+        va_idx = rng_split.choice(n_tr, n_va, replace=False)
+        tr_mask = np.ones(n_tr, dtype=bool)
+        tr_mask[va_idx] = False
+        tr_edges = tr80_edges[tr_mask]
 
     # Prevent feature leakage: rebuild user features from training edges only
     x_dict = rebuild_user_features(data, tr_edges, device)
@@ -168,7 +171,7 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
         os.makedirs(out_dir, exist_ok=True)
         pt_path = os.path.join(out_dir, f'final_model_seed{seed}.pt')
         torch.save(model.state_dict(), pt_path)
-        print(f"  Model saved → {pt_path}")
+        print(f"  Model saved -> {pt_path}")
 
     os.makedirs(os.path.join(out_dir, 'epoch_logs'), exist_ok=True)
     _write_csv(epoch_rows,

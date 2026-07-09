@@ -1,0 +1,13 @@
+{
+  "dataset": "imdb",
+  "task": "nc",
+  "n_total": 3454,
+  "n_train": 829,
+  "n_val": 207,
+  "n_test": 2418,
+  "tr_frac": 0.24,
+  "va_frac": 0.06,
+  "te_frac": 0.7,
+  "n_classes": 3,
+  "seed": 42
+}

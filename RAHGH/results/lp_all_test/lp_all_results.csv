@@ -1,0 +1,2 @@
+dataset,seed,auc,ap,hits@1,hits@3,hits@10,mrr,time_sec,hp_d,hp_K,hp_dropout,hp_lr,hp_wd,hp_epochs,hp_patience,hp_decoder_dropout
+amazon,0,0.878,0.6344,0.2393,0.3759,0.636,0.3585,1.22,128,5,0.1,0.001,0.0001,400,30,0.3

@@ -214,21 +214,61 @@ class RAHGH(nn.Module):
 #  Homogeneous GNN Backbones
 # ─────────────────────────────────────────────────────────────────────────────
 
+class GATEncoder(nn.Module):
+    """
+    GAT encoder for LP/embedding tasks.
+    Same architecture as SimpleGAT but outputs d-dim embeddings (not class logits).
+
+    Architecture:
+        H1     = ELU( GATConv(Z, heads=heads) )   + Dropout
+        output = GATConv(H1, heads=1, concat=False)
+
+    Args:
+        in_dim     : int   input dim
+        hidden_dim : int   per-head feature dim
+        out_dim    : int   output embedding dim
+        heads      : int   attention heads in layer 1  (default 4)
+        dropout    : float  (default 0.5)
+    """
+
+    def __init__(
+        self,
+        in_dim: int,
+        hidden_dim: int,
+        out_dim: int,
+        heads: int = 4,
+        dropout: float = 0.5,
+    ):
+        super().__init__()
+        from torch_geometric.nn import GATConv
+        self.conv1   = GATConv(in_dim, hidden_dim, heads=heads, dropout=dropout)
+        self.conv2   = GATConv(hidden_dim * heads, out_dim, heads=1,
+                               concat=False, dropout=dropout)
+        self.dropout = dropout
+
+    def forward(
+        self,
+        Z: torch.Tensor,
+        edge_index: torch.Tensor,
+    ) -> torch.Tensor:
+        Z = F.dropout(Z, p=self.dropout, training=self.training)
+        Z = F.elu(self.conv1(Z, edge_index))
+        Z = F.dropout(Z, p=self.dropout, training=self.training)
+        return self.conv2(Z, edge_index)
+
+
 class SimpleGCN(nn.Module):
     """
     Two-layer GCN backbone that operates on RAHGH's unified embedding.
 
     Architecture:
-        H1     = ReLU( row_norm(A_homo) @ Z_final @ W1 )   + Dropout
-        logits = row_norm(A_homo) @ H1 @ W2
+        A_hat  = D^{-1/2} (A_homo + I) D^{-1/2}    (symmetric norm + self-loops)
+        H1     = ReLU( A_hat @ Z_final @ W1 )       + Dropout
+        logits = A_hat @ H1 @ W2
 
-    Matches the SimpleGCN from the IMDB baseline code:  D^{-1} A row
-    normalisation applied before each linear layer.
-
-    Row norm (D^{-1} A) is preferred over symmetric norm in the GCN head
-    because the RAHGH homogenizer has already applied symmetric-diffusion
-    smoothing; the head only needs to propagate once more without altering
-    the magnitude scaling that row norm preserves.
+    Symmetric normalisation (D^{-1/2} A D^{-1/2}) plus self-loops matches the
+    original GCN (Kipf & Welling, 2017) and the original RAHGH implementation.
+    Self-loops ensure every node propagates its own features even when isolated.
 
     Args:
         in_dim     : int    input dim  = output_dim of RAHGH
@@ -245,22 +285,30 @@ class SimpleGCN(nn.Module):
         dropout: float = 0.5,
     ):
         super().__init__()
-        self.lin1    = nn.Linear(in_dim, hidden_dim)
-        self.lin2    = nn.Linear(hidden_dim, out_dim)
+        self.lin1    = nn.Linear(in_dim, hidden_dim, bias=False)
+        self.lin2    = nn.Linear(hidden_dim, out_dim, bias=False)
         self.dropout = dropout
 
     @staticmethod
-    def _row_normalize(A: torch.Tensor) -> torch.Tensor:
-        """D^{-1} A row normalization for a sparse COO tensor."""
-        indices = A.indices()
-        values  = A.values().float()
-        row = indices[0]
-        N   = A.size(0)
-        deg = torch.zeros(N, dtype=torch.float32, device=values.device)
-        deg.scatter_add_(0, row, values.abs())
+    def _sym_normalize(A: torch.Tensor) -> torch.Tensor:
+        """D^{-1/2} A D^{-1/2} symmetric normalization with self-loops."""
+        N = A.size(0)
+        device = A.device
+        # Add identity self-loops
+        idx_self = torch.arange(N, device=device)
+        indices = torch.cat([A.indices(), torch.stack([idx_self, idx_self], dim=0)], dim=1)
+        values = torch.cat([A.values().float(), torch.ones(N, dtype=torch.float32, device=device)])
+        A_sl = torch.sparse_coo_tensor(indices, values, A.size(), device=device).coalesce()
+        # Symmetric normalization
+        row = A_sl.indices()[0]
+        col = A_sl.indices()[1]
+        v   = A_sl.values()
+        deg = torch.zeros(N, dtype=torch.float32, device=device)
+        deg.scatter_add_(0, row, v.abs())
         deg = deg.clamp(min=1e-8)
-        norm_values = values / deg[row]
-        return torch.sparse_coo_tensor(indices, norm_values, A.size()).coalesce()
+        d_inv_sqrt = deg.pow(-0.5)
+        norm_values = v * d_inv_sqrt[row] * d_inv_sqrt[col]
+        return torch.sparse_coo_tensor(A_sl.indices(), norm_values, A.size(), device=device).coalesce()
 
     @torch._dynamo.disable
     def forward(self, Z: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
@@ -268,7 +316,7 @@ class SimpleGCN(nn.Module):
         device_type = "cuda" if Z.is_cuda else "cpu"
         with torch.amp.autocast(device_type=device_type, enabled=False):
             Z_f32 = Z.to(dtype=torch.float32)
-            A_norm = self._row_normalize(A)
+            A_norm = self._sym_normalize(A)
             H = torch.sparse.mm(A_norm, Z_f32)
             H = F.relu(self.lin1(H))
             H = F.dropout(H, p=self.dropout, training=self.training)
@@ -447,6 +495,82 @@ class RAHGHClassifier(nn.Module):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+#  RAHGHEncoderWithHead -- RAHGH + optional GNN head for LP/embedding tasks
+# ─────────────────────────────────────────────────────────────────────────────
+
+class RAHGHEncoderWithHead(nn.Module):
+    """
+    RAHGH encoder with optional GAT/GCN head for LP/embedding.
+
+    Wraps RAHGH + optional GNN head that outputs d-dim embeddings.
+    Same forward signature as RAHGH: returns (embeddings, alpha).
+
+    Args:
+        homogenizer : RAHGH instance
+        relation_names : list[str]
+        num_nodes   : int
+        head_type   : str   "none" (default), "gat", or "gcn"
+        gnn_dim     : int   hidden dim inside head (None → uses RAHGH output_dim)
+        gnn_dropout : float
+        gnn_heads   : int   GAT heads in layer 1
+    """
+
+    def __init__(
+        self,
+        homogenizer: RAHGH,
+        relation_names: List[str],
+        num_nodes: int,
+        head_type: str = "none",
+        gnn_dim: Optional[int] = None,
+        gnn_dropout: float = 0.5,
+        gnn_heads: int = 4,
+    ):
+        super().__init__()
+        self.homogenizer = homogenizer
+        self.relation_names = relation_names
+        self.num_nodes = num_nodes
+        self.head_type = head_type
+        out_dim = homogenizer.residual.mlp[-1].out_features  # RAHGH output_dim
+
+        if head_type == "gat":
+            self.head = GATEncoder(
+                in_dim=out_dim,
+                hidden_dim=(gnn_dim or out_dim) // gnn_heads,
+                out_dim=out_dim,
+                heads=gnn_heads,
+                dropout=gnn_dropout,
+            )
+        elif head_type == "gcn":
+            self.head = SimpleGCN(
+                in_dim=out_dim,
+                hidden_dim=gnn_dim or out_dim,
+                out_dim=out_dim,
+                dropout=gnn_dropout,
+            )
+        else:
+            self.head = None
+
+    def forward(
+        self,
+        x_dict: Dict[str, torch.Tensor],
+        edge_index_dict: Dict[str, torch.Tensor],
+        node_type_indices: Dict[str, torch.Tensor],
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        Z, alpha = self.homogenizer(x_dict, edge_index_dict, node_type_indices)
+
+        if self.head is not None:
+            A_homo = build_homo_adjacency(
+                edge_index_dict, alpha, self.num_nodes, self.relation_names
+            )
+            if self.head_type == "gcn":
+                Z = self.head(Z, A_homo)
+            else:
+                Z = self.head(Z, A_homo.indices())
+
+        return Z, alpha
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 #  Backward-compatible compile_model (kept from original rahgh.py)
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -515,9 +639,10 @@ def build_encoder(
     data: dict,
     params: dict,
     device: torch.device,
+    head: str = "none",
 ) -> RAHGH:
     """
-    Build plain RAHGH encoder.
+    Build RAHGH encoder with optional GNN head.
 
     Used by: clustering, link prediction, recommendation.
 
@@ -526,13 +651,18 @@ def build_encoder(
         K       → diffusion hops
         dropout → dropout rate
 
+    head options:
+        "none"  → plain RAHGH (default)
+        "gat"   → RAHGH + GATEncoder (2-layer GAT, outputs d-dim embeddings)
+        "gcn"   → RAHGH + row-norm GCN (outputs d-dim embeddings)
+
     Does NOT use:
         num_classes  (not applicable — no classifier head)
         n_clusters   (not applicable — clustering is downstream)
     """
     d = params['d']
 
-    model = RAHGH(
+    homogenizer = RAHGH(
         node_type_dims={k: v.shape[1] for k, v in data['X_dict'].items()},
         relation_info=_build_relation_info(data),
         num_nodes=data['N'],
@@ -541,8 +671,22 @@ def build_encoder(
         K=params['K'],
         dropout=params['dropout'],
         directed=False,
-    ).to(device)
-    return compile_model(model)
+    )
+
+    if head and head != "none":
+        model = RAHGHEncoderWithHead(
+            homogenizer=homogenizer,
+            relation_names=list(_build_relation_info(data).keys()),
+            num_nodes=data['N'],
+            head_type=head,
+            gnn_dim=d,
+            gnn_dropout=params.get('gnn_dropout', 0.5),
+            gnn_heads=params.get('gnn_heads', 4),
+        )
+    else:
+        model = homogenizer
+
+    return compile_model(model).to(device)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

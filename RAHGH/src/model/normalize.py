@@ -1,4 +1,7 @@
 import torch
+torch.sparse.check_sparse_tensor_invariants = False
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="torch.sparse")
 from typing import Optional
 
 

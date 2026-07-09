@@ -399,24 +399,24 @@ def rebuild_user_features(data, tr_edges, device):
     if 'ua_weights' not in data or 'user' not in data['X_dict']:
         return {k: v.to(device) for k, v in data['X_dict'].items()}
 
-    weights = data['ua_weights']
+    tr_np = np.array(tr_edges, dtype=np.int64)
     user_g2l = {gid: li for li, gid in enumerate(data['node_type_global_ids']['user'])}
     artist_g2l = {gid: li for li, gid in enumerate(data['node_type_global_ids']['artist'])}
     x_dict = {k: v.to(device) for k, v in data['X_dict'].items()}
     X_artist = x_dict['artist']
     d = X_artist.shape[1]
 
+    # Build local index mappings for all edges at once
+    u_local = np.array([user_g2l.get(int(u), -1) for u in tr_np[:, 0]], dtype=np.int64)
+    a_local = np.array([artist_g2l.get(int(a), -1) for a in tr_np[:, 1]], dtype=np.int64)
+    valid = (u_local >= 0) & (a_local >= 0)
+    u_t = torch.tensor(u_local[valid], dtype=torch.long, device=device)
+    a_t = torch.tensor(a_local[valid], dtype=torch.long, device=device)
+
     X_user = torch.zeros(data['Nu'], d, dtype=torch.float32, device=device)
     weight_sum = torch.zeros(data['Nu'], dtype=torch.float32, device=device)
-
-    for u, a in tr_edges:
-        ui = user_g2l.get(int(u))
-        ai = artist_g2l.get(int(a))
-        if ui is None or ai is None:
-            continue
-        w = weights.get((int(u), int(a)), 1.0)
-        X_user[ui] += X_artist[ai] * w
-        weight_sum[ui] += w
+    X_user.index_add_(0, u_t, X_artist[a_t])
+    weight_sum.index_add_(0, u_t, torch.ones(len(u_t), dtype=torch.float32, device=device))
 
     weight_sum = weight_sum.clamp(min=1.0)
     X_user = X_user / weight_sum.unsqueeze(1)

@@ -5,7 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
 from sklearn.cluster import KMeans
-from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score
+from sklearn.metrics import normalized_mutual_info_score, adjusted_rand_score, f1_score
 from sklearn.preprocessing import normalize as sk_normalize
 from sklearn.decomposition import TruncatedSVD
 from scipy.optimize import linear_sum_assignment
@@ -235,10 +235,18 @@ def run_fold_clustering(data, params, tr_idx, va_idx, device):
     pred = KMeans(n_clusters=data['n_classes'], n_init=5,
                   random_state=0).fit_predict(
         sk_normalize(Z_np, norm='l2'))
-    nmi = normalized_mutual_info_score(y_np, pred)
+
+    D = np.zeros((data['n_classes'], data['n_classes']), dtype=np.int64)
+    for t, p in zip(y_np, pred):
+        D[t, p] += 1
+    _, c = linear_sum_assignment(-D)
+    pred_mapped = np.zeros_like(pred)
+    for ci, cl in enumerate(c):
+        pred_mapped[pred == cl] = ci
+    macro_f1 = f1_score(y_np, pred_mapped, average='macro', zero_division=0)
 
     del model; torch.cuda.empty_cache()
-    return nmi
+    return macro_f1
 
 
 # ─────────────────────────────────────────────────────────────────────

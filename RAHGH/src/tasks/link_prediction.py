@@ -308,15 +308,19 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     d = best_params['d']
 
-    # Hold out 10% of training edges for validation
-    rng_split = np.random.default_rng(seed + 999)
-    n_tr = len(tr80_edges)
-    n_va = int(0.1 * n_tr)
-    va_idx = rng_split.choice(n_tr, n_va, replace=False)
-    tr_mask = np.ones(n_tr, dtype=bool)
-    tr_mask[va_idx] = False
-    tr_edges = tr80_edges[tr_mask]
-    va_edges = tr80_edges[va_idx]
+    # Use HGB val edges if available, otherwise hold out 10% of training edges
+    if data.get('val_edges') is not None and len(data['val_edges']) > 0:
+        va_edges = data['val_edges']
+        tr_edges = tr80_edges
+    else:
+        rng_split = np.random.default_rng(seed + 999)
+        n_tr = len(tr80_edges)
+        n_va = int(0.1 * n_tr)
+        va_idx = rng_split.choice(n_tr, n_va, replace=False)
+        tr_mask = np.ones(n_tr, dtype=bool)
+        tr_mask[va_idx] = False
+        tr_edges = tr80_edges[tr_mask]
+        va_edges = tr80_edges[va_idx]
 
     # Rebuild user features from only training edges
     x_dict = rebuild_user_features(data, tr_edges, device)
@@ -431,7 +435,7 @@ def run_final_lp(data, best_params, tr80_edges, te20_edges,
         os.makedirs(out_dir, exist_ok=True)
         pt_path = os.path.join(out_dir, f'final_model_seed{seed}.pt')
         torch.save(model.state_dict(), pt_path)
-        print(f"  Model saved → {pt_path}")
+        print(f"  Model saved -> {pt_path}")
 
     if out_dir is not None:
         import csv

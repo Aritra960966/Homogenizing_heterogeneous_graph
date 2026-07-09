@@ -1,0 +1,5 @@
+dataset,task,macro_f1_mean,macro_f1_sd,micro_f1_mean,micro_f1_sd,accuracy_mean,accuracy_sd,auc_mean,auc_sd,n_seeds,best_hp_d,best_hp_d_prime,best_hp_K,best_hp_dropout,best_hp_dropout_gnn,best_hp_lr,best_hp_wd,best_hp_epochs,best_hp_hidden,best_hp_label_smoothing,best_hp_warmup
+dblp,nc,0.8729,0.0,0.8796,0.0,0.8796,0.0,0.9767,0.0,1,64,64,2,0.1,0.1,0.005,0.0001,50,64,0.1,0
+dblp,nc,0.8864,0.0,0.8944,0.0,0.8944,0.0,0.9798,0.0,1,64,64,2,0.1,0.1,0.005,0.0001,50,64,0.1,0
+dblp,nc,0.9127,0.0108,0.9197,0.0097,0.9197,0.0097,0.9882,0.0033,10,32,64,4,0.1,0.5,0.001,0.0001,1000,32,0.0,0
+dblp,nc,0.9166,0.0045,0.9228,0.0037,0.9228,0.0037,0.9897,0.0013,10,32,128,4,0.5,0.5,0.001,0.0001,500,128,0.0,0

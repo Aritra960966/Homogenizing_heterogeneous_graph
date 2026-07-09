@@ -1,0 +1,11 @@
+{
+  "dataset": "dblp",
+  "task": "rec",
+  "n_edges": 19645,
+  "n_train": 15716,
+  "n_test": 3929,
+  "tr_frac": 0.8,
+  "te_frac": 0.2,
+  "target_relation_idx": 0,
+  "seed": 42
+}

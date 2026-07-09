@@ -1,0 +1,15 @@
+{
+  "acm_nc": {
+    "d": 128,
+    "d_prime": 128,
+    "K": 5,
+    "dropout": 0.1,
+    "dropout_gnn": 0.5,
+    "lr": 0.001,
+    "wd": 0.0001,
+    "epochs": 500,
+    "hidden": 128,
+    "label_smoothing": 0.1,
+    "warmup": 10
+  }
+}

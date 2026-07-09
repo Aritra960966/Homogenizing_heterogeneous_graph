@@ -1,0 +1,11 @@
+{
+  "dataset": "lastfm_magnn",
+  "task": "rec",
+  "n_edges": 92834,
+  "n_train": 74267,
+  "n_test": 18567,
+  "tr_frac": 0.8,
+  "te_frac": 0.2,
+  "target_relation_idx": 0,
+  "seed": 42
+}

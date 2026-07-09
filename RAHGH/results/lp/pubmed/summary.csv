@@ -1,0 +1,2 @@
+dataset,task,auc_mean,auc_sd,ap_mean,ap_sd,macro_f1_mean,macro_f1_sd,hits@1_mean,hits@3_mean,hits@10_mean,hits@1_sd,hits@3_sd,hits@10_sd,n_seeds,best_hp_d,best_hp_d_prime,best_hp_K,best_hp_dropout,best_hp_dropout_gnn,best_hp_lr,best_hp_wd,best_hp_epochs,best_hp_hidden,best_hp_label_smoothing,best_hp_warmup
+pubmed,lp,0.6636,0.07,0.4476,0.0985,0.4173,0.2251,0.1971,0.2312,0.3049,0.0365,0.0522,0.0711,10,64,32,6,0.1,0.1,0.005,0.0001,600,64,0.0,10

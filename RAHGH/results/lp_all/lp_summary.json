@@ -1,0 +1,20 @@
+{
+  "amazon_ini": {
+    "auc": "0.7748 \u00b1 0.0283",
+    "mrr": "0.8973 \u00b1 0.0226",
+    "auc_product\u2192product_0": "0.8653 \u00b1 0.0153",
+    "mrr_product\u2192product_0": "0.9380 \u00b1 0.0136",
+    "auc_product\u2192product_1": "0.6843 \u00b1 0.0443",
+    "mrr_product\u2192product_1": "0.8567 \u00b1 0.0320"
+  },
+  "lastfm": {
+    "auc": "0.7829 \u00b1 0.0095",
+    "mrr": "0.9282 \u00b1 0.0103"
+  },
+  "pubmed_ini": {
+    "auc": "0.6233 \u00b1 0.0317",
+    "mrr": "0.8635 \u00b1 0.0256",
+    "auc_paper\u2192author": "0.6233 \u00b1 0.0317",
+    "mrr_paper\u2192author": "0.8635 \u00b1 0.0256"
+  }
+}

@@ -1,0 +1,2 @@
+dataset,task,auc_mean,auc_sd,ap_mean,ap_sd,mrr_mean,mrr_sd,macro_f1_mean,macro_f1_sd,hits@1_mean,hits@3_mean,hits@10_mean,hits@1_sd,hits@3_sd,hits@10_sd,n_seeds,best_hp_d,best_hp_d_prime,best_hp_K,best_hp_dropout,best_hp_dropout_gnn,best_hp_lr,best_hp_wd,best_hp_epochs,best_hp_hidden,best_hp_label_smoothing,best_hp_warmup
+amazon_ini,lp,0.879,0.0214,0.6098,0.0485,0.3685,0.0296,0.6717,0.0653,0.226,0.4089,0.7032,0.0261,0.039,0.0415,10,128,32,5,0.1,0.5,0.001,0.0001,400,128,0.0,10

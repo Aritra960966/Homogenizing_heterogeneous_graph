@@ -1,0 +1,3 @@
+dataset,task,macro_f1_mean,macro_f1_sd,micro_f1_mean,micro_f1_sd,accuracy_mean,accuracy_sd,auc_mean,auc_sd,n_seeds,best_hp_d,best_hp_d_prime,best_hp_K,best_hp_dropout,best_hp_dropout_gnn,best_hp_lr,best_hp_wd,best_hp_epochs,best_hp_hidden,best_hp_label_smoothing,best_hp_warmup
+acm,nc,0.9379,0.0045,0.9374,0.0045,0.9374,0.0045,0.9921,0.0011,10,128,256,4,0.5,0.5,0.001,0.0001,500,128,0.0,0
+acm,nc,0.9333,0.0028,0.9329,0.0027,0.9329,0.0027,0.9914,0.0014,10,128,128,5,0.1,0.5,0.001,0.0001,500,128,0.1,10

@@ -82,7 +82,8 @@ def load_acm(mat_path: str = "data/raw/ACM/ACM.mat", seed: int = 42) -> dict:
     )
 
     # Step 3 — Author re-indexing  (global offset = N_p)
-    pa_local_rows, pa_orig_cols = mat['PvsA'][paper_idx].nonzero()
+    PvsA = mat['PvsA'].toarray() if hasattr(mat['PvsA'], 'toarray') else np.asarray(mat['PvsA'])
+    pa_local_rows, pa_orig_cols = np.nonzero(PvsA[paper_idx])
 
     author_map = {}
     re_authors = []
@@ -94,7 +95,8 @@ def load_acm(mat_path: str = "data/raw/ACM/ACM.mat", seed: int = 42) -> dict:
     N_a = len(author_map)
 
     # Step 4 — Subject re-indexing  (global offset = N_p + N_a)
-    ps_local_rows, ps_orig_cols = mat['PvsL'][paper_idx].nonzero()
+    PvsL = mat['PvsL'].toarray() if hasattr(mat['PvsL'], 'toarray') else np.asarray(mat['PvsL'])
+    ps_local_rows, ps_orig_cols = np.nonzero(PvsL[paper_idx])
 
     subject_map = {}
     re_subjects = []
@@ -124,13 +126,20 @@ def load_acm(mat_path: str = "data/raw/ACM/ACM.mat", seed: int = 42) -> dict:
 
     # Step 6 — Term dictionary for features
     if 'TvsP' in mat:
-        PvsT = mat['TvsP'].T.tocsr()
+        PvsT = mat['TvsP'].T   # (12499, 1903) after transpose
     elif 'PvsT' in mat:
-        PvsT = mat['PvsT'].tocsr()
+        PvsT = mat['PvsT']
     else:
         raise KeyError("ACM.mat must contain 'TvsP' or 'PvsT'")
 
-    pt_local_rows, pt_orig_cols = PvsT[paper_idx].nonzero()
+    if hasattr(PvsT, 'toarray'):
+        PvsT_np = PvsT.toarray()
+    elif hasattr(PvsT, 'tocsr'):
+        PvsT_np = PvsT.tocsr().toarray()
+    else:
+        PvsT_np = np.asarray(PvsT)
+
+    pt_local_rows, pt_orig_cols = np.nonzero(PvsT_np[paper_idx])
 
     term_map = {}
     re_terms = []
@@ -186,11 +195,12 @@ def load_acm(mat_path: str = "data/raw/ACM/ACM.mat", seed: int = 42) -> dict:
             'ps': ('paper', 'subject'),
             'sp': ('subject', 'paper'),
         },
-        'labels':      torch.from_numpy(labels_np),
-        'target_size': N_p,
-        'target_type': 'paper',
-        'n_classes':   3,
-        'N':           N,
+        'labels':         torch.from_numpy(labels_np),
+        'target_size':    N_p,
+        'target_type':    'paper',
+        'n_classes':      3,
+        'N':              N,
+        'paper_orig_idx': torch.from_numpy(paper_idx),
     }
 
 

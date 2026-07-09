@@ -1,0 +1,13 @@
+{
+  "dataset": "pubmed_ini",
+  "task": "lp",
+  "n_edges": 51323,
+  "n_train": 41571,
+  "n_val": 4619,
+  "n_test": 5133,
+  "tr_frac": 0.81,
+  "va_frac": 0.09,
+  "te_frac": 0.1,
+  "target_relation_idx": 4,
+  "seed": 42
+}

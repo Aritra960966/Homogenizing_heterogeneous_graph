@@ -26,7 +26,6 @@ class TypeSpecificProjection(nn.Module):
         self.projections = nn.ModuleDict({
             node_type: nn.Sequential(
                 nn.Linear(in_dim, hidden_dim),
-                nn.LayerNorm(hidden_dim),
                 nn.ReLU(),
             )
             for node_type, in_dim in node_type_dims.items()

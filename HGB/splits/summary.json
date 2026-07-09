@@ -1,0 +1,309 @@
+{
+  "dblp": {
+    "nc": {
+      "dataset": "dblp",
+      "task": "nc",
+      "n_total": 4057,
+      "n_train": 974,
+      "n_val": 243,
+      "n_test": 2840,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 4,
+      "seed": 42
+    },
+    "lp": {
+      "dataset": "dblp",
+      "task": "lp",
+      "n_edges": 19645,
+      "n_train": 15912,
+      "n_val": 1768,
+      "n_test": 1965,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 0,
+      "seed": 42
+    },
+    "cl": {
+      "dataset": "dblp",
+      "task": "cl",
+      "n_total": 4057,
+      "n_train": 974,
+      "n_val": 243,
+      "n_test": 2840,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 4,
+      "seed": 42
+    },
+    "rec": {
+      "dataset": "dblp",
+      "task": "rec",
+      "n_edges": 19645,
+      "n_train": 15716,
+      "n_test": 3929,
+      "tr_frac": 0.8,
+      "te_frac": 0.2,
+      "target_relation_idx": 0,
+      "seed": 42
+    }
+  },
+  "acm": {
+    "nc": {
+      "dataset": "acm",
+      "task": "nc",
+      "n_total": 3025,
+      "n_train": 726,
+      "n_val": 181,
+      "n_test": 2118,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 3,
+      "seed": 42
+    },
+    "cl": {
+      "dataset": "acm",
+      "task": "cl",
+      "n_total": 3025,
+      "n_train": 726,
+      "n_val": 181,
+      "n_test": 2118,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 3,
+      "seed": 42
+    }
+  },
+  "imdb": {
+    "nc": {
+      "dataset": "imdb",
+      "task": "nc",
+      "n_total": 3454,
+      "n_train": 829,
+      "n_val": 207,
+      "n_test": 2418,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 3,
+      "seed": 42
+    },
+    "lp": {
+      "dataset": "imdb",
+      "task": "lp",
+      "n_edges": 10359,
+      "n_train": 8390,
+      "n_val": 932,
+      "n_test": 1037,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 2,
+      "seed": 42
+    },
+    "cl": {
+      "dataset": "imdb",
+      "task": "cl",
+      "n_total": 3454,
+      "n_train": 829,
+      "n_val": 207,
+      "n_test": 2418,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 3,
+      "seed": 42
+    }
+  },
+  "pubmed": {
+    "nc": {
+      "dataset": "pubmed",
+      "task": "nc",
+      "n_total": 26522,
+      "n_train": 6365,
+      "n_val": 1591,
+      "n_test": 18566,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 0,
+      "seed": 42
+    },
+    "lp": {
+      "dataset": "pubmed",
+      "task": "lp",
+      "n_edges": 51323,
+      "n_train": 41571,
+      "n_val": 4619,
+      "n_test": 5133,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 4,
+      "seed": 42
+    }
+  },
+  "pubmed_ini": {
+    "nc": {
+      "dataset": "pubmed_ini",
+      "task": "nc",
+      "n_total": 26522,
+      "n_train": 6365,
+      "n_val": 1591,
+      "n_test": 18566,
+      "tr_frac": 0.24,
+      "va_frac": 0.06,
+      "te_frac": 0.7,
+      "n_classes": 0,
+      "seed": 42
+    },
+    "lp": {
+      "dataset": "pubmed_ini",
+      "task": "lp",
+      "n_edges": 51323,
+      "n_train": 41571,
+      "n_val": 4619,
+      "n_test": 5133,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 4,
+      "seed": 42
+    }
+  },
+  "amazon": {
+    "lp": {
+      "dataset": "amazon",
+      "task": "lp",
+      "n_edges": 69315,
+      "n_train": 56145,
+      "n_val": 6238,
+      "n_test": 6932,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 0,
+      "seed": 42
+    },
+    "rec": {
+      "dataset": "amazon",
+      "task": "rec",
+      "n_edges": 69315,
+      "n_train": 55452,
+      "n_test": 13863,
+      "tr_frac": 0.8,
+      "te_frac": 0.2,
+      "target_relation_idx": 0,
+      "seed": 42
+    }
+  },
+  "amazon_ini": {
+    "lp": {
+      "dataset": "amazon_ini",
+      "task": "lp",
+      "n_edges": 69315,
+      "n_train": 56145,
+      "n_val": 6238,
+      "n_test": 6932,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 0,
+      "seed": 42
+    },
+    "rec": {
+      "dataset": "amazon_ini",
+      "task": "rec",
+      "n_edges": 69315,
+      "n_train": 55452,
+      "n_test": 13863,
+      "tr_frac": 0.8,
+      "te_frac": 0.2,
+      "target_relation_idx": 0,
+      "seed": 42
+    }
+  },
+  "lastfm": {
+    "lp": {
+      "dataset": "lastfm",
+      "task": "lp",
+      "n_edges": 92834,
+      "n_train": 75195,
+      "n_val": 8355,
+      "n_test": 9284,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 0,
+      "seed": 42
+    },
+    "rec": {
+      "dataset": "lastfm",
+      "task": "rec",
+      "n_edges": 92834,
+      "n_train": 74267,
+      "n_test": 18567,
+      "tr_frac": 0.8,
+      "te_frac": 0.2,
+      "target_relation_idx": 0,
+      "seed": 42
+    }
+  },
+  "lastfm_ini": {
+    "lp": {
+      "dataset": "lastfm_ini",
+      "task": "lp",
+      "n_edges": 92834,
+      "n_train": 75195,
+      "n_val": 8355,
+      "n_test": 9284,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 0,
+      "seed": 42
+    },
+    "rec": {
+      "dataset": "lastfm_ini",
+      "task": "rec",
+      "n_edges": 92834,
+      "n_train": 74267,
+      "n_test": 18567,
+      "tr_frac": 0.8,
+      "te_frac": 0.2,
+      "target_relation_idx": 0,
+      "seed": 42
+    }
+  },
+  "lastfm_magnn": {
+    "lp": {
+      "dataset": "lastfm_magnn",
+      "task": "lp",
+      "n_edges": 92834,
+      "n_train": 75195,
+      "n_val": 8355,
+      "n_test": 9284,
+      "tr_frac": 0.81,
+      "va_frac": 0.09,
+      "te_frac": 0.1,
+      "target_relation_idx": 0,
+      "seed": 42
+    },
+    "rec": {
+      "dataset": "lastfm_magnn",
+      "task": "rec",
+      "n_edges": 92834,
+      "n_train": 74267,
+      "n_test": 18567,
+      "tr_frac": 0.8,
+      "te_frac": 0.2,
+      "target_relation_idx": 0,
+      "seed": 42
+    }
+  }
+}

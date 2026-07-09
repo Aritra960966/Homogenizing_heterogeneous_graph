@@ -5,6 +5,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+*.venv
 
 # Virtual environment
 graph_cu/
@@ -45,3 +46,5 @@ RAHGH/data/processed/
 
 # caches
 __pycache__/
+
+HGB/venv

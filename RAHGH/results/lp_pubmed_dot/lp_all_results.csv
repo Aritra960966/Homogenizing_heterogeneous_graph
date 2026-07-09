@@ -1,0 +1,6 @@
+dataset,run,auc,mrr,auc_per_rel,mrr_per_rel,time_sec,hp_d,hp_K,hp_dropout,hp_lr,hp_wd,hp_epochs,hp_patience,hp_head,hp_n_neg,hp_decoder
+pubmed_ini,0,0.6821,0.9239,"{""paper\u2192author"": 0.6821}","{""paper\u2192author"": 0.9239}",37.41,128,5,0.3,0.001,0.001,400,30,none,5,dot
+pubmed_ini,1,0.6741,0.9146,"{""paper\u2192author"": 0.6741}","{""paper\u2192author"": 0.9146}",30.92,128,5,0.3,0.001,0.001,400,30,none,5,dot
+pubmed_ini,2,0.6749,0.917,"{""paper\u2192author"": 0.6749}","{""paper\u2192author"": 0.917}",35.56,128,5,0.3,0.001,0.001,400,30,none,5,dot
+pubmed_ini,3,0.703,0.9369,"{""paper\u2192author"": 0.703}","{""paper\u2192author"": 0.9369}",45.85,128,5,0.3,0.001,0.001,400,30,none,5,dot
+pubmed_ini,4,0.6583,0.8987,"{""paper\u2192author"": 0.6583}","{""paper\u2192author"": 0.8987}",23.82,128,5,0.3,0.001,0.001,400,30,none,5,dot

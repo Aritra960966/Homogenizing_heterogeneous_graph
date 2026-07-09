@@ -23,6 +23,9 @@ def _get_loader(dataset_name):
     loader_fn = lazy.get(dataset_name)
     if loader_fn is not None:
         return loader_fn()
+    from .data.amazon_loader import load_amazon
+    if dataset_name in ('amazon', 'amazon_ini'):
+        return load_amazon()
     from .data.ogb_loader import load_ogb
     return load_ogb(dataset_name)
 

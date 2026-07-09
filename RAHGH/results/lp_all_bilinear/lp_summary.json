@@ -1,0 +1,14 @@
+{
+  "amazon_ini": {
+    "auc": "0.9568 \u00b1 0.0014",
+    "mrr": "0.9835 \u00b1 0.0014",
+    "auc_product\u2192product_0": "0.9900 \u00b1 0.0007",
+    "mrr_product\u2192product_0": "0.9952 \u00b1 0.0002",
+    "auc_product\u2192product_1": "0.9235 \u00b1 0.0028",
+    "mrr_product\u2192product_1": "0.9719 \u00b1 0.0030"
+  },
+  "lastfm": {
+    "auc": "0.9084 \u00b1 0.0073",
+    "mrr": "0.9834 \u00b1 0.0040"
+  }
+}

@@ -1,0 +1,1409 @@
+GPU: NVIDIA RTX A5000 | VRAM: 25.8 GB
+
+======================================================================
+  START: DBLP NC  ->  D:\Aritra\graph\Homogenizing_heterogeneous_graph\HGB\results\nc\dblp
+======================================================================
+
+Loading dblp data...
+
+============================================================
+  DBLP — Node Classification
+============================================================
+
+  Hyperparameter search: 100 combos × 5 folds = 500 runs
+
+  combination 1({'d': 128, 'd_prime': 128, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9140  (best so far: 0.9140)
+
+    >> fold 1: macro_f1=0.9359  (best so far: 0.9359)
+
+    >> fold 2: macro_f1=0.9230  (best so far: 0.9359)
+
+    >> fold 3: macro_f1=0.9086  (best so far: 0.9359)
+
+    >> fold 4: macro_f1=0.9516  (best so far: 0.9516)
+    combo 1 fold_scores=[0.914, 0.9359, 0.923, 0.9086, 0.9516]
+    combo 1 mean_macro_f1=0.9267  [79s]
+
+  combination 2({'d': 32, 'd_prime': 128, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9143  (best so far: 0.9143)
+
+    >> fold 1: macro_f1=0.9275  (best so far: 0.9275)
+
+    >> fold 2: macro_f1=0.9266  (best so far: 0.9275)
+
+    >> fold 3: macro_f1=0.9223  (best so far: 0.9275)
+
+    >> fold 4: macro_f1=0.9417  (best so far: 0.9417)
+    combo 2 fold_scores=[0.9143, 0.9275, 0.9266, 0.9223, 0.9417]
+    combo 2 mean_macro_f1=0.9265  [54s]
+
+  combination 3({'d': 128, 'd_prime': 64, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9192  (best so far: 0.9192)
+
+    >> fold 1: macro_f1=0.9289  (best so far: 0.9289)
+
+    >> fold 2: macro_f1=0.9285  (best so far: 0.9289)
+
+    >> fold 3: macro_f1=0.9222  (best so far: 0.9289)
+
+    >> fold 4: macro_f1=0.9498  (best so far: 0.9498)
+    combo 3 fold_scores=[0.9192, 0.9289, 0.9285, 0.9222, 0.9498]
+    combo 3 mean_macro_f1=0.9297  [63s]
+
+  combination 4({'d': 128, 'd_prime': 32, 'K': 6, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9158  (best so far: 0.9158)
+
+    >> fold 1: macro_f1=0.9218  (best so far: 0.9218)
+
+    >> fold 2: macro_f1=0.9199  (best so far: 0.9218)
+
+    >> fold 3: macro_f1=0.9333  (best so far: 0.9333)
+
+    >> fold 4: macro_f1=0.9482  (best so far: 0.9482)
+    combo 4 fold_scores=[0.9158, 0.9218, 0.9199, 0.9333, 0.9482]
+    combo 4 mean_macro_f1=0.9278  [89s]
+
+  combination 5({'d': 64, 'd_prime': 128, 'K': 6, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 400, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9201  (best so far: 0.9201)
+
+    >> fold 1: macro_f1=0.9378  (best so far: 0.9378)
+
+    >> fold 2: macro_f1=0.9377  (best so far: 0.9378)
+
+    >> fold 3: macro_f1=0.9271  (best so far: 0.9378)
+
+    >> fold 4: macro_f1=0.9535  (best so far: 0.9535)
+    combo 5 fold_scores=[0.9201, 0.9378, 0.9377, 0.9271, 0.9535]
+    combo 5 mean_macro_f1=0.9353  [84s]
+
+  combination 6({'d': 32, 'd_prime': 128, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9255  (best so far: 0.9255)
+
+    >> fold 1: macro_f1=0.9342  (best so far: 0.9342)
+
+    >> fold 2: macro_f1=0.9254  (best so far: 0.9342)
+
+    >> fold 3: macro_f1=0.9281  (best so far: 0.9342)
+
+    >> fold 4: macro_f1=0.9578  (best so far: 0.9578)
+    combo 6 fold_scores=[0.9255, 0.9342, 0.9254, 0.9281, 0.9578]
+    combo 6 mean_macro_f1=0.9342  [43s]
+
+  combination 7({'d': 64, 'd_prime': 128, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 400, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9273  (best so far: 0.9273)
+
+    >> fold 1: macro_f1=0.9273  (best so far: 0.9273)
+
+    >> fold 2: macro_f1=0.9270  (best so far: 0.9273)
+
+    >> fold 3: macro_f1=0.9205  (best so far: 0.9273)
+
+    >> fold 4: macro_f1=0.9476  (best so far: 0.9476)
+    combo 7 fold_scores=[0.9273, 0.9273, 0.927, 0.9205, 0.9476]
+    combo 7 mean_macro_f1=0.9299  [69s]
+
+  combination 8({'d': 64, 'd_prime': 32, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9084  (best so far: 0.9084)
+
+    >> fold 1: macro_f1=0.9377  (best so far: 0.9377)
+
+    >> fold 2: macro_f1=0.9392  (best so far: 0.9392)
+
+    >> fold 3: macro_f1=0.9296  (best so far: 0.9392)
+
+    >> fold 4: macro_f1=0.9588  (best so far: 0.9588)
+    combo 8 fold_scores=[0.9084, 0.9377, 0.9392, 0.9296, 0.9588]
+    combo 8 mean_macro_f1=0.9347  [75s]
+
+  combination 9({'d': 64, 'd_prime': 64, 'K': 1, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9015  (best so far: 0.9015)
+
+    >> fold 1: macro_f1=0.9164  (best so far: 0.9164)
+
+    >> fold 2: macro_f1=0.9207  (best so far: 0.9207)
+
+    >> fold 3: macro_f1=0.9052  (best so far: 0.9207)
+
+    >> fold 4: macro_f1=0.9275  (best so far: 0.9275)
+    combo 9 fold_scores=[0.9015, 0.9164, 0.9207, 0.9052, 0.9275]
+    combo 9 mean_macro_f1=0.9143  [31s]
+
+  combination 10({'d': 64, 'd_prime': 64, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9162  (best so far: 0.9162)
+
+    >> fold 1: macro_f1=0.9210  (best so far: 0.9210)
+
+    >> fold 2: macro_f1=0.9179  (best so far: 0.9210)
+
+    >> fold 3: macro_f1=0.9251  (best so far: 0.9251)
+
+    >> fold 4: macro_f1=0.9343  (best so far: 0.9343)
+    combo 10 fold_scores=[0.9162, 0.921, 0.9179, 0.9251, 0.9343]
+    combo 10 mean_macro_f1=0.9229  [62s]
+
+  combination 11({'d': 32, 'd_prime': 128, 'K': 2, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9086  (best so far: 0.9086)
+
+    >> fold 1: macro_f1=0.9208  (best so far: 0.9208)
+
+    >> fold 2: macro_f1=0.9305  (best so far: 0.9305)
+
+    >> fold 3: macro_f1=0.9131  (best so far: 0.9305)
+
+    >> fold 4: macro_f1=0.9439  (best so far: 0.9439)
+    combo 11 fold_scores=[0.9086, 0.9208, 0.9305, 0.9131, 0.9439]
+    combo 11 mean_macro_f1=0.9234  [48s]
+
+  combination 12({'d': 32, 'd_prime': 64, 'K': 1, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8978  (best so far: 0.8978)
+
+    >> fold 1: macro_f1=0.9196  (best so far: 0.9196)
+
+    >> fold 2: macro_f1=0.9070  (best so far: 0.9196)
+
+    >> fold 3: macro_f1=0.9225  (best so far: 0.9225)
+
+    >> fold 4: macro_f1=0.9304  (best so far: 0.9304)
+    combo 12 fold_scores=[0.8978, 0.9196, 0.907, 0.9225, 0.9304]
+    combo 12 mean_macro_f1=0.9154  [34s]
+
+  combination 13({'d': 128, 'd_prime': 64, 'K': 1, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8863  (best so far: 0.8863)
+
+    >> fold 1: macro_f1=0.9165  (best so far: 0.9165)
+
+    >> fold 2: macro_f1=0.8996  (best so far: 0.9165)
+
+    >> fold 3: macro_f1=0.9080  (best so far: 0.9165)
+
+    >> fold 4: macro_f1=0.9325  (best so far: 0.9325)
+    combo 13 fold_scores=[0.8863, 0.9165, 0.8996, 0.908, 0.9325]
+    combo 13 mean_macro_f1=0.9086  [44s]
+
+  combination 14({'d': 32, 'd_prime': 128, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9028  (best so far: 0.9028)
+
+    >> fold 1: macro_f1=0.9313  (best so far: 0.9313)
+
+    >> fold 2: macro_f1=0.9401  (best so far: 0.9401)
+
+    >> fold 3: macro_f1=0.9202  (best so far: 0.9401)
+
+    >> fold 4: macro_f1=0.9547  (best so far: 0.9547)
+    combo 14 fold_scores=[0.9028, 0.9313, 0.9401, 0.9202, 0.9547]
+    combo 14 mean_macro_f1=0.9298  [59s]
+
+  combination 15({'d': 128, 'd_prime': 128, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9174  (best so far: 0.9174)
+
+    >> fold 1: macro_f1=0.9127  (best so far: 0.9174)
+
+    >> fold 2: macro_f1=0.9207  (best so far: 0.9207)
+
+    >> fold 3: macro_f1=0.9072  (best so far: 0.9207)
+
+    >> fold 4: macro_f1=0.9394  (best so far: 0.9394)
+    combo 15 fold_scores=[0.9174, 0.9127, 0.9207, 0.9072, 0.9394]
+    combo 15 mean_macro_f1=0.9195  [69s]
+
+  combination 16({'d': 32, 'd_prime': 128, 'K': 6, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 400, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9293  (best so far: 0.9293)
+
+    >> fold 1: macro_f1=0.9165  (best so far: 0.9293)
+
+    >> fold 2: macro_f1=0.9233  (best so far: 0.9293)
+
+    >> fold 3: macro_f1=0.9224  (best so far: 0.9293)
+
+    >> fold 4: macro_f1=0.9383  (best so far: 0.9383)
+    combo 16 fold_scores=[0.9293, 0.9165, 0.9233, 0.9224, 0.9383]
+    combo 16 mean_macro_f1=0.9260  [54s]
+
+  combination 17({'d': 128, 'd_prime': 32, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 400, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9280  (best so far: 0.9280)
+
+    >> fold 1: macro_f1=0.9385  (best so far: 0.9385)
+
+    >> fold 2: macro_f1=0.9338  (best so far: 0.9385)
+
+    >> fold 3: macro_f1=0.9277  (best so far: 0.9385)
+
+    >> fold 4: macro_f1=0.9523  (best so far: 0.9523)
+    combo 17 fold_scores=[0.928, 0.9385, 0.9338, 0.9277, 0.9523]
+    combo 17 mean_macro_f1=0.9360  [91s]
+
+  combination 18({'d': 32, 'd_prime': 64, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9176  (best so far: 0.9176)
+
+    >> fold 1: macro_f1=0.9315  (best so far: 0.9315)
+
+    >> fold 2: macro_f1=0.9453  (best so far: 0.9453)
+
+    >> fold 3: macro_f1=0.9344  (best so far: 0.9453)
+
+    >> fold 4: macro_f1=0.9605  (best so far: 0.9605)
+    combo 18 fold_scores=[0.9176, 0.9315, 0.9453, 0.9344, 0.9605]
+    combo 18 mean_macro_f1=0.9379  [59s]
+
+  combination 19({'d': 32, 'd_prime': 128, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9047  (best so far: 0.9047)
+
+    >> fold 1: macro_f1=0.9231  (best so far: 0.9231)
+
+    >> fold 2: macro_f1=0.9339  (best so far: 0.9339)
+
+    >> fold 3: macro_f1=0.9344  (best so far: 0.9344)
+
+    >> fold 4: macro_f1=0.9411  (best so far: 0.9411)
+    combo 19 fold_scores=[0.9047, 0.9231, 0.9339, 0.9344, 0.9411]
+    combo 19 mean_macro_f1=0.9275  [82s]
+
+  combination 20({'d': 128, 'd_prime': 32, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9075  (best so far: 0.9075)
+
+    >> fold 1: macro_f1=0.9400  (best so far: 0.9400)
+
+    >> fold 2: macro_f1=0.9314  (best so far: 0.9400)
+
+    >> fold 3: macro_f1=0.9229  (best so far: 0.9400)
+
+    >> fold 4: macro_f1=0.9480  (best so far: 0.9480)
+    combo 20 fold_scores=[0.9075, 0.94, 0.9314, 0.9229, 0.948]
+    combo 20 mean_macro_f1=0.9299  [92s]
+
+  combination 21({'d': 64, 'd_prime': 64, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8986  (best so far: 0.8986)
+
+    >> fold 1: macro_f1=0.9063  (best so far: 0.9063)
+
+    >> fold 2: macro_f1=0.8930  (best so far: 0.9063)
+
+    >> fold 3: macro_f1=0.9027  (best so far: 0.9063)
+
+    >> fold 4: macro_f1=0.9430  (best so far: 0.9430)
+    combo 21 fold_scores=[0.8986, 0.9063, 0.893, 0.9027, 0.943]
+    combo 21 mean_macro_f1=0.9087  [37s]
+
+  combination 22({'d': 128, 'd_prime': 32, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9170  (best so far: 0.9170)
+
+    >> fold 1: macro_f1=0.9351  (best so far: 0.9351)
+
+    >> fold 2: macro_f1=0.9148  (best so far: 0.9351)
+
+    >> fold 3: macro_f1=0.9182  (best so far: 0.9351)
+
+    >> fold 4: macro_f1=0.9293  (best so far: 0.9351)
+    combo 22 fold_scores=[0.917, 0.9351, 0.9148, 0.9182, 0.9293]
+    combo 22 mean_macro_f1=0.9229  [71s]
+
+  combination 23({'d': 32, 'd_prime': 32, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9030  (best so far: 0.9030)
+
+    >> fold 1: macro_f1=0.9033  (best so far: 0.9033)
+
+    >> fold 2: macro_f1=0.9040  (best so far: 0.9040)
+
+    >> fold 3: macro_f1=0.9127  (best so far: 0.9127)
+
+    >> fold 4: macro_f1=0.9327  (best so far: 0.9327)
+    combo 23 fold_scores=[0.903, 0.9033, 0.904, 0.9127, 0.9327]
+    combo 23 mean_macro_f1=0.9111  [42s]
+
+  combination 24({'d': 64, 'd_prime': 64, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8960  (best so far: 0.8960)
+
+    >> fold 1: macro_f1=0.9196  (best so far: 0.9196)
+
+    >> fold 2: macro_f1=0.9141  (best so far: 0.9196)
+
+    >> fold 3: macro_f1=0.9182  (best so far: 0.9196)
+
+    >> fold 4: macro_f1=0.9397  (best so far: 0.9397)
+    combo 24 fold_scores=[0.896, 0.9196, 0.9141, 0.9182, 0.9397]
+    combo 24 mean_macro_f1=0.9175  [28s]
+
+  combination 25({'d': 32, 'd_prime': 32, 'K': 1, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8997  (best so far: 0.8997)
+
+    >> fold 1: macro_f1=0.9236  (best so far: 0.9236)
+
+    >> fold 2: macro_f1=0.9067  (best so far: 0.9236)
+
+    >> fold 3: macro_f1=0.9136  (best so far: 0.9236)
+
+    >> fold 4: macro_f1=0.9423  (best so far: 0.9423)
+    combo 25 fold_scores=[0.8997, 0.9236, 0.9067, 0.9136, 0.9423]
+    combo 25 mean_macro_f1=0.9172  [34s]
+
+  combination 26({'d': 64, 'd_prime': 64, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9090  (best so far: 0.9090)
+
+    >> fold 1: macro_f1=0.9373  (best so far: 0.9373)
+
+    >> fold 2: macro_f1=0.9303  (best so far: 0.9373)
+
+    >> fold 3: macro_f1=0.9210  (best so far: 0.9373)
+
+    >> fold 4: macro_f1=0.9463  (best so far: 0.9463)
+    combo 26 fold_scores=[0.909, 0.9373, 0.9303, 0.921, 0.9463]
+    combo 26 mean_macro_f1=0.9288  [49s]
+
+  combination 27({'d': 64, 'd_prime': 32, 'K': 6, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8949  (best so far: 0.8949)
+
+    >> fold 1: macro_f1=0.9394  (best so far: 0.9394)
+
+    >> fold 2: macro_f1=0.9377  (best so far: 0.9394)
+
+    >> fold 3: macro_f1=0.9318  (best so far: 0.9394)
+
+    >> fold 4: macro_f1=0.9414  (best so far: 0.9414)
+    combo 27 fold_scores=[0.8949, 0.9394, 0.9377, 0.9318, 0.9414]
+    combo 27 mean_macro_f1=0.9290  [74s]
+
+  combination 28({'d': 32, 'd_prime': 32, 'K': 2, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9104  (best so far: 0.9104)
+
+    >> fold 1: macro_f1=0.9261  (best so far: 0.9261)
+
+    >> fold 2: macro_f1=0.8920  (best so far: 0.9261)
+
+    >> fold 3: macro_f1=0.9090  (best so far: 0.9261)
+
+    >> fold 4: macro_f1=0.9478  (best so far: 0.9478)
+    combo 28 fold_scores=[0.9104, 0.9261, 0.892, 0.909, 0.9478]
+    combo 28 mean_macro_f1=0.9171  [47s]
+
+  combination 29({'d': 64, 'd_prime': 128, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9103  (best so far: 0.9103)
+
+    >> fold 1: macro_f1=0.9269  (best so far: 0.9269)
+
+    >> fold 2: macro_f1=0.9287  (best so far: 0.9287)
+
+    >> fold 3: macro_f1=0.9092  (best so far: 0.9287)
+
+    >> fold 4: macro_f1=0.9401  (best so far: 0.9401)
+    combo 29 fold_scores=[0.9103, 0.9269, 0.9287, 0.9092, 0.9401]
+    combo 29 mean_macro_f1=0.9230  [44s]
+
+  combination 30({'d': 32, 'd_prime': 64, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9254  (best so far: 0.9254)
+
+    >> fold 1: macro_f1=0.9384  (best so far: 0.9384)
+
+    >> fold 2: macro_f1=0.9297  (best so far: 0.9384)
+
+    >> fold 3: macro_f1=0.9170  (best so far: 0.9384)
+
+    >> fold 4: macro_f1=0.9562  (best so far: 0.9562)
+    combo 30 fold_scores=[0.9254, 0.9384, 0.9297, 0.917, 0.9562]
+    combo 30 mean_macro_f1=0.9333  [61s]
+
+  combination 31({'d': 32, 'd_prime': 32, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 600, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9107  (best so far: 0.9107)
+
+    >> fold 1: macro_f1=0.9280  (best so far: 0.9280)
+
+    >> fold 2: macro_f1=0.9175  (best so far: 0.9280)
+
+    >> fold 3: macro_f1=0.9123  (best so far: 0.9280)
+
+    >> fold 4: macro_f1=0.9503  (best so far: 0.9503)
+    combo 31 fold_scores=[0.9107, 0.928, 0.9175, 0.9123, 0.9503]
+    combo 31 mean_macro_f1=0.9237  [46s]
+
+  combination 32({'d': 128, 'd_prime': 128, 'K': 6, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9112  (best so far: 0.9112)
+
+    >> fold 1: macro_f1=0.9353  (best so far: 0.9353)
+
+    >> fold 2: macro_f1=0.9369  (best so far: 0.9369)
+
+    >> fold 3: macro_f1=0.9034  (best so far: 0.9369)
+
+    >> fold 4: macro_f1=0.9425  (best so far: 0.9425)
+    combo 32 fold_scores=[0.9112, 0.9353, 0.9369, 0.9034, 0.9425]
+    combo 32 mean_macro_f1=0.9259  [78s]
+
+  combination 33({'d': 64, 'd_prime': 32, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 200, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9165  (best so far: 0.9165)
+
+    >> fold 1: macro_f1=0.9236  (best so far: 0.9236)
+
+    >> fold 2: macro_f1=0.9329  (best so far: 0.9329)
+
+    >> fold 3: macro_f1=0.9264  (best so far: 0.9329)
+
+    >> fold 4: macro_f1=0.9486  (best so far: 0.9486)
+    combo 33 fold_scores=[0.9165, 0.9236, 0.9329, 0.9264, 0.9486]
+    combo 33 mean_macro_f1=0.9296  [48s]
+
+  combination 34({'d': 64, 'd_prime': 32, 'K': 2, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9001  (best so far: 0.9001)
+
+    >> fold 1: macro_f1=0.9224  (best so far: 0.9224)
+
+    >> fold 2: macro_f1=0.9056  (best so far: 0.9224)
+
+    >> fold 3: macro_f1=0.9059  (best so far: 0.9224)
+
+    >> fold 4: macro_f1=0.9317  (best so far: 0.9317)
+    combo 34 fold_scores=[0.9001, 0.9224, 0.9056, 0.9059, 0.9317]
+    combo 34 mean_macro_f1=0.9131  [29s]
+
+  combination 35({'d': 32, 'd_prime': 64, 'K': 6, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9002  (best so far: 0.9002)
+
+    >> fold 1: macro_f1=0.9126  (best so far: 0.9126)
+
+    >> fold 2: macro_f1=0.8923  (best so far: 0.9126)
+
+    >> fold 3: macro_f1=0.9276  (best so far: 0.9276)
+
+    >> fold 4: macro_f1=0.9455  (best so far: 0.9455)
+    combo 35 fold_scores=[0.9002, 0.9126, 0.8923, 0.9276, 0.9455]
+    combo 35 mean_macro_f1=0.9156  [47s]
+
+  combination 36({'d': 64, 'd_prime': 64, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9074  (best so far: 0.9074)
+
+    >> fold 1: macro_f1=0.9305  (best so far: 0.9305)
+
+    >> fold 2: macro_f1=0.9185  (best so far: 0.9305)
+
+    >> fold 3: macro_f1=0.9140  (best so far: 0.9305)
+
+    >> fold 4: macro_f1=0.9501  (best so far: 0.9501)
+    combo 36 fold_scores=[0.9074, 0.9305, 0.9185, 0.914, 0.9501]
+    combo 36 mean_macro_f1=0.9241  [48s]
+
+  combination 37({'d': 64, 'd_prime': 64, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9072  (best so far: 0.9072)
+
+    >> fold 1: macro_f1=0.9275  (best so far: 0.9275)
+
+    >> fold 2: macro_f1=0.9095  (best so far: 0.9275)
+
+    >> fold 3: macro_f1=0.9217  (best so far: 0.9275)
+
+    >> fold 4: macro_f1=0.9398  (best so far: 0.9398)
+    combo 37 fold_scores=[0.9072, 0.9275, 0.9095, 0.9217, 0.9398]
+    combo 37 mean_macro_f1=0.9211  [39s]
+
+  combination 38({'d': 128, 'd_prime': 64, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9126  (best so far: 0.9126)
+
+    >> fold 1: macro_f1=0.9403  (best so far: 0.9403)
+
+    >> fold 2: macro_f1=0.8936  (best so far: 0.9403)
+
+    >> fold 3: macro_f1=0.9117  (best so far: 0.9403)
+
+    >> fold 4: macro_f1=0.9466  (best so far: 0.9466)
+    combo 38 fold_scores=[0.9126, 0.9403, 0.8936, 0.9117, 0.9466]
+    combo 38 mean_macro_f1=0.9209  [67s]
+
+  combination 39({'d': 64, 'd_prime': 32, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9140  (best so far: 0.9140)
+
+    >> fold 1: macro_f1=0.9305  (best so far: 0.9305)
+
+    >> fold 2: macro_f1=0.9256  (best so far: 0.9305)
+
+    >> fold 3: macro_f1=0.9122  (best so far: 0.9305)
+
+    >> fold 4: macro_f1=0.9460  (best so far: 0.9460)
+    combo 39 fold_scores=[0.914, 0.9305, 0.9256, 0.9122, 0.946]
+    combo 39 mean_macro_f1=0.9257  [53s]
+
+  combination 40({'d': 128, 'd_prime': 64, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8974  (best so far: 0.8974)
+
+    >> fold 1: macro_f1=0.9181  (best so far: 0.9181)
+
+    >> fold 2: macro_f1=0.9117  (best so far: 0.9181)
+
+    >> fold 3: macro_f1=0.9083  (best so far: 0.9181)
+
+    >> fold 4: macro_f1=0.9433  (best so far: 0.9433)
+    combo 40 fold_scores=[0.8974, 0.9181, 0.9117, 0.9083, 0.9433]
+    combo 40 mean_macro_f1=0.9158  [41s]
+
+  combination 41({'d': 128, 'd_prime': 128, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9212  (best so far: 0.9212)
+
+    >> fold 1: macro_f1=0.9277  (best so far: 0.9277)
+
+    >> fold 2: macro_f1=0.9215  (best so far: 0.9277)
+
+    >> fold 3: macro_f1=0.9285  (best so far: 0.9285)
+
+    >> fold 4: macro_f1=0.9564  (best so far: 0.9564)
+    combo 41 fold_scores=[0.9212, 0.9277, 0.9215, 0.9285, 0.9564]
+    combo 41 mean_macro_f1=0.9311  [111s]
+
+  combination 42({'d': 128, 'd_prime': 128, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9227  (best so far: 0.9227)
+
+    >> fold 1: macro_f1=0.9408  (best so far: 0.9408)
+
+    >> fold 2: macro_f1=0.9201  (best so far: 0.9408)
+
+    >> fold 3: macro_f1=0.9222  (best so far: 0.9408)
+
+    >> fold 4: macro_f1=0.9516  (best so far: 0.9516)
+    combo 42 fold_scores=[0.9227, 0.9408, 0.9201, 0.9222, 0.9516]
+    combo 42 mean_macro_f1=0.9315  [86s]
+
+  combination 43({'d': 64, 'd_prime': 128, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 600, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9202  (best so far: 0.9202)
+
+    >> fold 1: macro_f1=0.9292  (best so far: 0.9292)
+
+    >> fold 2: macro_f1=0.9327  (best so far: 0.9327)
+
+    >> fold 3: macro_f1=0.9229  (best so far: 0.9327)
+
+    >> fold 4: macro_f1=0.9519  (best so far: 0.9519)
+    combo 43 fold_scores=[0.9202, 0.9292, 0.9327, 0.9229, 0.9519]
+    combo 43 mean_macro_f1=0.9314  [48s]
+
+  combination 44({'d': 32, 'd_prime': 64, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9022  (best so far: 0.9022)
+
+    >> fold 1: macro_f1=0.9301  (best so far: 0.9301)
+
+    >> fold 2: macro_f1=0.9373  (best so far: 0.9373)
+
+    >> fold 3: macro_f1=0.9302  (best so far: 0.9373)
+
+    >> fold 4: macro_f1=0.9547  (best so far: 0.9547)
+    combo 44 fold_scores=[0.9022, 0.9301, 0.9373, 0.9302, 0.9547]
+    combo 44 mean_macro_f1=0.9309  [53s]
+
+  combination 45({'d': 128, 'd_prime': 128, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9120  (best so far: 0.9120)
+
+    >> fold 1: macro_f1=0.9134  (best so far: 0.9134)
+
+    >> fold 2: macro_f1=0.9226  (best so far: 0.9226)
+
+    >> fold 3: macro_f1=0.9083  (best so far: 0.9226)
+
+    >> fold 4: macro_f1=0.9405  (best so far: 0.9405)
+    combo 45 fold_scores=[0.912, 0.9134, 0.9226, 0.9083, 0.9405]
+    combo 45 mean_macro_f1=0.9194  [67s]
+
+  combination 46({'d': 32, 'd_prime': 64, 'K': 2, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9007  (best so far: 0.9007)
+
+    >> fold 1: macro_f1=0.9347  (best so far: 0.9347)
+
+    >> fold 2: macro_f1=0.9308  (best so far: 0.9347)
+
+    >> fold 3: macro_f1=0.9284  (best so far: 0.9347)
+
+    >> fold 4: macro_f1=0.9352  (best so far: 0.9352)
+    combo 46 fold_scores=[0.9007, 0.9347, 0.9308, 0.9284, 0.9352]
+    combo 46 mean_macro_f1=0.9260  [31s]
+
+  combination 47({'d': 128, 'd_prime': 32, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9150  (best so far: 0.9150)
+
+    >> fold 1: macro_f1=0.9322  (best so far: 0.9322)
+
+    >> fold 2: macro_f1=0.9175  (best so far: 0.9322)
+
+    >> fold 3: macro_f1=0.9211  (best so far: 0.9322)
+
+    >> fold 4: macro_f1=0.9518  (best so far: 0.9518)
+    combo 47 fold_scores=[0.915, 0.9322, 0.9175, 0.9211, 0.9518]
+    combo 47 mean_macro_f1=0.9275  [95s]
+
+  combination 48({'d': 64, 'd_prime': 32, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 400, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9213  (best so far: 0.9213)
+
+    >> fold 1: macro_f1=0.9313  (best so far: 0.9313)
+
+    >> fold 2: macro_f1=0.9302  (best so far: 0.9313)
+
+    >> fold 3: macro_f1=0.9284  (best so far: 0.9313)
+
+    >> fold 4: macro_f1=0.9550  (best so far: 0.9550)
+    combo 48 fold_scores=[0.9213, 0.9313, 0.9302, 0.9284, 0.955]
+    combo 48 mean_macro_f1=0.9332  [65s]
+
+  combination 49({'d': 64, 'd_prime': 64, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8963  (best so far: 0.8963)
+
+    >> fold 1: macro_f1=0.9055  (best so far: 0.9055)
+
+    >> fold 2: macro_f1=0.8968  (best so far: 0.9055)
+
+    >> fold 3: macro_f1=0.9015  (best so far: 0.9055)
+
+    >> fold 4: macro_f1=0.9213  (best so far: 0.9213)
+    combo 49 fold_scores=[0.8963, 0.9055, 0.8968, 0.9015, 0.9213]
+    combo 49 mean_macro_f1=0.9043  [23s]
+
+  combination 50({'d': 64, 'd_prime': 128, 'K': 2, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8933  (best so far: 0.8933)
+
+    >> fold 1: macro_f1=0.9281  (best so far: 0.9281)
+
+    >> fold 2: macro_f1=0.9087  (best so far: 0.9281)
+
+    >> fold 3: macro_f1=0.9084  (best so far: 0.9281)
+
+    >> fold 4: macro_f1=0.9274  (best so far: 0.9281)
+    combo 50 fold_scores=[0.8933, 0.9281, 0.9087, 0.9084, 0.9274]
+    combo 50 mean_macro_f1=0.9132  [32s]
+
+  combination 51({'d': 128, 'd_prime': 128, 'K': 6, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9262  (best so far: 0.9262)
+
+    >> fold 1: macro_f1=0.9403  (best so far: 0.9403)
+
+    >> fold 2: macro_f1=0.9361  (best so far: 0.9403)
+
+    >> fold 3: macro_f1=0.9203  (best so far: 0.9403)
+
+    >> fold 4: macro_f1=0.9480  (best so far: 0.9480)
+    combo 51 fold_scores=[0.9262, 0.9403, 0.9361, 0.9203, 0.948]
+    combo 51 mean_macro_f1=0.9342  [83s]
+
+  combination 52({'d': 64, 'd_prime': 64, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9104  (best so far: 0.9104)
+
+    >> fold 1: macro_f1=0.9221  (best so far: 0.9221)
+
+    >> fold 2: macro_f1=0.9196  (best so far: 0.9221)
+
+    >> fold 3: macro_f1=0.9102  (best so far: 0.9221)
+
+    >> fold 4: macro_f1=0.9362  (best so far: 0.9362)
+    combo 52 fold_scores=[0.9104, 0.9221, 0.9196, 0.9102, 0.9362]
+    combo 52 mean_macro_f1=0.9197  [44s]
+
+  combination 53({'d': 128, 'd_prime': 64, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9039  (best so far: 0.9039)
+
+    >> fold 1: macro_f1=0.9143  (best so far: 0.9143)
+
+    >> fold 2: macro_f1=0.8935  (best so far: 0.9143)
+
+    >> fold 3: macro_f1=0.9085  (best so far: 0.9143)
+
+    >> fold 4: macro_f1=0.9389  (best so far: 0.9389)
+    combo 53 fold_scores=[0.9039, 0.9143, 0.8935, 0.9085, 0.9389]
+    combo 53 mean_macro_f1=0.9118  [36s]
+
+  combination 54({'d': 128, 'd_prime': 128, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9224  (best so far: 0.9224)
+
+    >> fold 1: macro_f1=0.9291  (best so far: 0.9291)
+
+    >> fold 2: macro_f1=0.9221  (best so far: 0.9291)
+
+    >> fold 3: macro_f1=0.9265  (best so far: 0.9291)
+
+    >> fold 4: macro_f1=0.9499  (best so far: 0.9499)
+    combo 54 fold_scores=[0.9224, 0.9291, 0.9221, 0.9265, 0.9499]
+    combo 54 mean_macro_f1=0.9300  [96s]
+
+  combination 55({'d': 64, 'd_prime': 128, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 400, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9251  (best so far: 0.9251)
+
+    >> fold 1: macro_f1=0.9426  (best so far: 0.9426)
+
+    >> fold 2: macro_f1=0.9396  (best so far: 0.9426)
+
+    >> fold 3: macro_f1=0.9315  (best so far: 0.9426)
+
+    >> fold 4: macro_f1=0.9509  (best so far: 0.9509)
+    combo 55 fold_scores=[0.9251, 0.9426, 0.9396, 0.9315, 0.9509]
+    combo 55 mean_macro_f1=0.9379  [58s]
+
+  combination 56({'d': 64, 'd_prime': 128, 'K': 6, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 400, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9167  (best so far: 0.9167)
+
+    >> fold 1: macro_f1=0.9445  (best so far: 0.9445)
+
+    >> fold 2: macro_f1=0.9374  (best so far: 0.9445)
+
+    >> fold 3: macro_f1=0.9131  (best so far: 0.9445)
+
+    >> fold 4: macro_f1=0.9562  (best so far: 0.9562)
+    combo 56 fold_scores=[0.9167, 0.9445, 0.9374, 0.9131, 0.9562]
+    combo 56 mean_macro_f1=0.9336  [77s]
+
+  combination 57({'d': 128, 'd_prime': 32, 'K': 2, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 400, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9083  (best so far: 0.9083)
+
+    >> fold 1: macro_f1=0.9278  (best so far: 0.9278)
+
+    >> fold 2: macro_f1=0.9213  (best so far: 0.9278)
+
+    >> fold 3: macro_f1=0.9167  (best so far: 0.9278)
+
+    >> fold 4: macro_f1=0.9474  (best so far: 0.9474)
+    combo 57 fold_scores=[0.9083, 0.9278, 0.9213, 0.9167, 0.9474]
+    combo 57 mean_macro_f1=0.9243  [45s]
+
+  combination 58({'d': 32, 'd_prime': 128, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 600, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9141  (best so far: 0.9141)
+
+    >> fold 1: macro_f1=0.9302  (best so far: 0.9302)
+
+    >> fold 2: macro_f1=0.9300  (best so far: 0.9302)
+
+    >> fold 3: macro_f1=0.9235  (best so far: 0.9302)
+
+    >> fold 4: macro_f1=0.9521  (best so far: 0.9521)
+    combo 58 fold_scores=[0.9141, 0.9302, 0.93, 0.9235, 0.9521]
+    combo 58 mean_macro_f1=0.9300  [58s]
+
+  combination 59({'d': 32, 'd_prime': 128, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9151  (best so far: 0.9151)
+
+    >> fold 1: macro_f1=0.9229  (best so far: 0.9229)
+
+    >> fold 2: macro_f1=0.9250  (best so far: 0.9250)
+
+    >> fold 3: macro_f1=0.9127  (best so far: 0.9250)
+
+    >> fold 4: macro_f1=0.9442  (best so far: 0.9442)
+    combo 59 fold_scores=[0.9151, 0.9229, 0.925, 0.9127, 0.9442]
+    combo 59 mean_macro_f1=0.9240  [45s]
+
+  combination 60({'d': 128, 'd_prime': 128, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9023  (best so far: 0.9023)
+
+    >> fold 1: macro_f1=0.9225  (best so far: 0.9225)
+
+    >> fold 2: macro_f1=0.9185  (best so far: 0.9225)
+
+    >> fold 3: macro_f1=0.9136  (best so far: 0.9225)
+
+    >> fold 4: macro_f1=0.9384  (best so far: 0.9384)
+    combo 60 fold_scores=[0.9023, 0.9225, 0.9185, 0.9136, 0.9384]
+    combo 60 mean_macro_f1=0.9190  [63s]
+
+  combination 61({'d': 32, 'd_prime': 64, 'K': 2, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9049  (best so far: 0.9049)
+
+    >> fold 1: macro_f1=0.9269  (best so far: 0.9269)
+
+    >> fold 2: macro_f1=0.9178  (best so far: 0.9269)
+
+    >> fold 3: macro_f1=0.9134  (best so far: 0.9269)
+
+    >> fold 4: macro_f1=0.9338  (best so far: 0.9338)
+    combo 61 fold_scores=[0.9049, 0.9269, 0.9178, 0.9134, 0.9338]
+    combo 61 mean_macro_f1=0.9194  [40s]
+
+  combination 62({'d': 128, 'd_prime': 64, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9125  (best so far: 0.9125)
+
+    >> fold 1: macro_f1=0.9436  (best so far: 0.9436)
+
+    >> fold 2: macro_f1=0.9320  (best so far: 0.9436)
+
+    >> fold 3: macro_f1=0.9214  (best so far: 0.9436)
+
+    >> fold 4: macro_f1=0.9495  (best so far: 0.9495)
+    combo 62 fold_scores=[0.9125, 0.9436, 0.932, 0.9214, 0.9495]
+    combo 62 mean_macro_f1=0.9318  [70s]
+
+  combination 63({'d': 64, 'd_prime': 32, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9203  (best so far: 0.9203)
+
+    >> fold 1: macro_f1=0.9308  (best so far: 0.9308)
+
+    >> fold 2: macro_f1=0.9276  (best so far: 0.9308)
+
+    >> fold 3: macro_f1=0.9258  (best so far: 0.9308)
+
+    >> fold 4: macro_f1=0.9483  (best so far: 0.9483)
+    combo 63 fold_scores=[0.9203, 0.9308, 0.9276, 0.9258, 0.9483]
+    combo 63 mean_macro_f1=0.9306  [83s]
+
+  combination 64({'d': 64, 'd_prime': 64, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9284  (best so far: 0.9284)
+
+    >> fold 1: macro_f1=0.9338  (best so far: 0.9338)
+
+    >> fold 2: macro_f1=0.9288  (best so far: 0.9338)
+
+    >> fold 3: macro_f1=0.9325  (best so far: 0.9338)
+
+    >> fold 4: macro_f1=0.9427  (best so far: 0.9427)
+    combo 64 fold_scores=[0.9284, 0.9338, 0.9288, 0.9325, 0.9427]
+    combo 64 mean_macro_f1=0.9332  [53s]
+
+  combination 65({'d': 32, 'd_prime': 64, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9197  (best so far: 0.9197)
+
+    >> fold 1: macro_f1=0.9394  (best so far: 0.9394)
+
+    >> fold 2: macro_f1=0.9217  (best so far: 0.9394)
+
+    >> fold 3: macro_f1=0.9342  (best so far: 0.9394)
+
+    >> fold 4: macro_f1=0.9580  (best so far: 0.9580)
+    combo 65 fold_scores=[0.9197, 0.9394, 0.9217, 0.9342, 0.958]
+    combo 65 mean_macro_f1=0.9346  [62s]
+
+  combination 66({'d': 32, 'd_prime': 64, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9067  (best so far: 0.9067)
+
+    >> fold 1: macro_f1=0.9257  (best so far: 0.9257)
+
+    >> fold 2: macro_f1=0.9293  (best so far: 0.9293)
+
+    >> fold 3: macro_f1=0.9274  (best so far: 0.9293)
+
+    >> fold 4: macro_f1=0.9472  (best so far: 0.9472)
+    combo 66 fold_scores=[0.9067, 0.9257, 0.9293, 0.9274, 0.9472]
+    combo 66 mean_macro_f1=0.9272  [41s]
+
+  combination 67({'d': 128, 'd_prime': 128, 'K': 6, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 400, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8997  (best so far: 0.8997)
+
+    >> fold 1: macro_f1=0.9372  (best so far: 0.9372)
+
+    >> fold 2: macro_f1=0.9242  (best so far: 0.9372)
+
+    >> fold 3: macro_f1=0.9177  (best so far: 0.9372)
+
+    >> fold 4: macro_f1=0.9488  (best so far: 0.9488)
+    combo 67 fold_scores=[0.8997, 0.9372, 0.9242, 0.9177, 0.9488]
+    combo 67 mean_macro_f1=0.9255  [80s]
+
+  combination 68({'d': 64, 'd_prime': 32, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9136  (best so far: 0.9136)
+
+    >> fold 1: macro_f1=0.9321  (best so far: 0.9321)
+
+    >> fold 2: macro_f1=0.9277  (best so far: 0.9321)
+
+    >> fold 3: macro_f1=0.9180  (best so far: 0.9321)
+
+    >> fold 4: macro_f1=0.9534  (best so far: 0.9534)
+    combo 68 fold_scores=[0.9136, 0.9321, 0.9277, 0.918, 0.9534]
+    combo 68 mean_macro_f1=0.9290  [78s]
+
+  combination 69({'d': 64, 'd_prime': 64, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9310  (best so far: 0.9310)
+
+    >> fold 1: macro_f1=0.9355  (best so far: 0.9355)
+
+    >> fold 2: macro_f1=0.9326  (best so far: 0.9355)
+
+    >> fold 3: macro_f1=0.9324  (best so far: 0.9355)
+
+    >> fold 4: macro_f1=0.9385  (best so far: 0.9385)
+    combo 69 fold_scores=[0.931, 0.9355, 0.9326, 0.9324, 0.9385]
+    combo 69 mean_macro_f1=0.9340  [57s]
+
+  combination 70({'d': 128, 'd_prime': 32, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8953  (best so far: 0.8953)
+
+    >> fold 1: macro_f1=0.9293  (best so far: 0.9293)
+
+    >> fold 2: macro_f1=0.9203  (best so far: 0.9293)
+
+    >> fold 3: macro_f1=0.9017  (best so far: 0.9293)
+
+    >> fold 4: macro_f1=0.9447  (best so far: 0.9447)
+    combo 70 fold_scores=[0.8953, 0.9293, 0.9203, 0.9017, 0.9447]
+    combo 70 mean_macro_f1=0.9182  [62s]
+
+  combination 71({'d': 64, 'd_prime': 128, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 700, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9208  (best so far: 0.9208)
+
+    >> fold 1: macro_f1=0.9285  (best so far: 0.9285)
+
+    >> fold 2: macro_f1=0.9202  (best so far: 0.9285)
+
+    >> fold 3: macro_f1=0.9068  (best so far: 0.9285)
+
+    >> fold 4: macro_f1=0.9459  (best so far: 0.9459)
+    combo 71 fold_scores=[0.9208, 0.9285, 0.9202, 0.9068, 0.9459]
+    combo 71 mean_macro_f1=0.9244  [40s]
+
+  combination 72({'d': 64, 'd_prime': 128, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8970  (best so far: 0.8970)
+
+    >> fold 1: macro_f1=0.9309  (best so far: 0.9309)
+
+    >> fold 2: macro_f1=0.9256  (best so far: 0.9309)
+
+    >> fold 3: macro_f1=0.9147  (best so far: 0.9309)
+
+    >> fold 4: macro_f1=0.9271  (best so far: 0.9309)
+    combo 72 fold_scores=[0.897, 0.9309, 0.9256, 0.9147, 0.9271]
+    combo 72 mean_macro_f1=0.9191  [35s]
+
+  combination 73({'d': 64, 'd_prime': 64, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 400, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9212  (best so far: 0.9212)
+
+    >> fold 1: macro_f1=0.9190  (best so far: 0.9212)
+
+    >> fold 2: macro_f1=0.9345  (best so far: 0.9345)
+
+    >> fold 3: macro_f1=0.9185  (best so far: 0.9345)
+
+    >> fold 4: macro_f1=0.9345  (best so far: 0.9345)
+    combo 73 fold_scores=[0.9212, 0.919, 0.9345, 0.9185, 0.9345]
+    combo 73 mean_macro_f1=0.9255  [48s]
+
+  combination 74({'d': 128, 'd_prime': 32, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9120  (best so far: 0.9120)
+
+    >> fold 1: macro_f1=0.9384  (best so far: 0.9384)
+
+    >> fold 2: macro_f1=0.9327  (best so far: 0.9384)
+
+    >> fold 3: macro_f1=0.9192  (best so far: 0.9384)
+
+    >> fold 4: macro_f1=0.9424  (best so far: 0.9424)
+    combo 74 fold_scores=[0.912, 0.9384, 0.9327, 0.9192, 0.9424]
+    combo 74 mean_macro_f1=0.9289  [80s]
+
+  combination 75({'d': 128, 'd_prime': 128, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9018  (best so far: 0.9018)
+
+    >> fold 1: macro_f1=0.9228  (best so far: 0.9228)
+
+    >> fold 2: macro_f1=0.8773  (best so far: 0.9228)
+
+    >> fold 3: macro_f1=0.9095  (best so far: 0.9228)
+
+    >> fold 4: macro_f1=0.9239  (best so far: 0.9239)
+    combo 75 fold_scores=[0.9018, 0.9228, 0.8773, 0.9095, 0.9239]
+    combo 75 mean_macro_f1=0.9071  [52s]
+
+  combination 76({'d': 128, 'd_prime': 64, 'K': 2, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 300, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9025  (best so far: 0.9025)
+
+    >> fold 1: macro_f1=0.9068  (best so far: 0.9068)
+
+    >> fold 2: macro_f1=0.9213  (best so far: 0.9213)
+
+    >> fold 3: macro_f1=0.9005  (best so far: 0.9213)
+
+    >> fold 4: macro_f1=0.9332  (best so far: 0.9332)
+    combo 76 fold_scores=[0.9025, 0.9068, 0.9213, 0.9005, 0.9332]
+    combo 76 mean_macro_f1=0.9129  [45s]
+
+  combination 77({'d': 128, 'd_prime': 32, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 500, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9158  (best so far: 0.9158)
+
+    >> fold 1: macro_f1=0.9280  (best so far: 0.9280)
+
+    >> fold 2: macro_f1=0.9313  (best so far: 0.9313)
+
+    >> fold 3: macro_f1=0.9112  (best so far: 0.9313)
+
+    >> fold 4: macro_f1=0.9540  (best so far: 0.9540)
+    combo 77 fold_scores=[0.9158, 0.928, 0.9313, 0.9112, 0.954]
+    combo 77 mean_macro_f1=0.9281  [80s]
+
+  combination 78({'d': 128, 'd_prime': 64, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9133  (best so far: 0.9133)
+
+    >> fold 1: macro_f1=0.9262  (best so far: 0.9262)
+
+    >> fold 2: macro_f1=0.8930  (best so far: 0.9262)
+
+    >> fold 3: macro_f1=0.9130  (best so far: 0.9262)
+
+    >> fold 4: macro_f1=0.9372  (best so far: 0.9372)
+    combo 78 fold_scores=[0.9133, 0.9262, 0.893, 0.913, 0.9372]
+    combo 78 mean_macro_f1=0.9165  [69s]
+
+  combination 79({'d': 32, 'd_prime': 32, 'K': 1, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 400, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8941  (best so far: 0.8941)
+
+    >> fold 1: macro_f1=0.9134  (best so far: 0.9134)
+
+    >> fold 2: macro_f1=0.9196  (best so far: 0.9196)
+
+    >> fold 3: macro_f1=0.9077  (best so far: 0.9196)
+
+    >> fold 4: macro_f1=0.9323  (best so far: 0.9323)
+    combo 79 fold_scores=[0.8941, 0.9134, 0.9196, 0.9077, 0.9323]
+    combo 79 mean_macro_f1=0.9134  [31s]
+
+  combination 80({'d': 32, 'd_prime': 32, 'K': 5, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9102  (best so far: 0.9102)
+
+    >> fold 1: macro_f1=0.9324  (best so far: 0.9324)
+
+    >> fold 2: macro_f1=0.9264  (best so far: 0.9324)
+
+    >> fold 3: macro_f1=0.9281  (best so far: 0.9324)
+
+    >> fold 4: macro_f1=0.9582  (best so far: 0.9582)
+    combo 80 fold_scores=[0.9102, 0.9324, 0.9264, 0.9281, 0.9582]
+    combo 80 mean_macro_f1=0.9311  [71s]
+
+  combination 81({'d': 32, 'd_prime': 128, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8869  (best so far: 0.8869)
+
+    >> fold 1: macro_f1=0.9088  (best so far: 0.9088)
+
+    >> fold 2: macro_f1=0.9179  (best so far: 0.9179)
+
+    >> fold 3: macro_f1=0.9034  (best so far: 0.9179)
+
+    >> fold 4: macro_f1=0.9291  (best so far: 0.9291)
+    combo 81 fold_scores=[0.8869, 0.9088, 0.9179, 0.9034, 0.9291]
+    combo 81 mean_macro_f1=0.9092  [22s]
+
+  combination 82({'d': 32, 'd_prime': 32, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9028  (best so far: 0.9028)
+
+    >> fold 1: macro_f1=0.9145  (best so far: 0.9145)
+
+    >> fold 2: macro_f1=0.9256  (best so far: 0.9256)
+
+    >> fold 3: macro_f1=0.9151  (best so far: 0.9256)
+
+    >> fold 4: macro_f1=0.9503  (best so far: 0.9503)
+    combo 82 fold_scores=[0.9028, 0.9145, 0.9256, 0.9151, 0.9503]
+    combo 82 mean_macro_f1=0.9217  [33s]
+
+  combination 83({'d': 128, 'd_prime': 32, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 400, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9094  (best so far: 0.9094)
+
+    >> fold 1: macro_f1=0.9209  (best so far: 0.9209)
+
+    >> fold 2: macro_f1=0.9164  (best so far: 0.9209)
+
+    >> fold 3: macro_f1=0.9143  (best so far: 0.9209)
+
+    >> fold 4: macro_f1=0.9344  (best so far: 0.9344)
+    combo 83 fold_scores=[0.9094, 0.9209, 0.9164, 0.9143, 0.9344]
+    combo 83 mean_macro_f1=0.9191  [48s]
+
+  combination 84({'d': 64, 'd_prime': 64, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9132  (best so far: 0.9132)
+
+    >> fold 1: macro_f1=0.9303  (best so far: 0.9303)
+
+    >> fold 2: macro_f1=0.9343  (best so far: 0.9343)
+
+    >> fold 3: macro_f1=0.9168  (best so far: 0.9343)
+
+    >> fold 4: macro_f1=0.9499  (best so far: 0.9499)
+    combo 84 fold_scores=[0.9132, 0.9303, 0.9343, 0.9168, 0.9499]
+    combo 84 mean_macro_f1=0.9289  [50s]
+
+  combination 85({'d': 128, 'd_prime': 128, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9178  (best so far: 0.9178)
+
+    >> fold 1: macro_f1=0.9347  (best so far: 0.9347)
+
+    >> fold 2: macro_f1=0.9342  (best so far: 0.9347)
+
+    >> fold 3: macro_f1=0.9215  (best so far: 0.9347)
+
+    >> fold 4: macro_f1=0.9445  (best so far: 0.9445)
+    combo 85 fold_scores=[0.9178, 0.9347, 0.9342, 0.9215, 0.9445]
+    combo 85 mean_macro_f1=0.9305  [56s]
+
+  combination 86({'d': 32, 'd_prime': 128, 'K': 3, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9050  (best so far: 0.9050)
+
+    >> fold 1: macro_f1=0.9375  (best so far: 0.9375)
+
+    >> fold 2: macro_f1=0.9183  (best so far: 0.9375)
+
+    >> fold 3: macro_f1=0.9203  (best so far: 0.9375)
+
+    >> fold 4: macro_f1=0.9410  (best so far: 0.9410)
+    combo 86 fold_scores=[0.905, 0.9375, 0.9183, 0.9203, 0.941]
+    combo 86 mean_macro_f1=0.9244  [47s]
+
+  combination 87({'d': 32, 'd_prime': 32, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.8966  (best so far: 0.8966)
+
+    >> fold 1: macro_f1=0.9004  (best so far: 0.9004)
+
+    >> fold 2: macro_f1=0.9203  (best so far: 0.9203)
+
+    >> fold 3: macro_f1=0.9143  (best so far: 0.9203)
+
+    >> fold 4: macro_f1=0.9396  (best so far: 0.9396)
+    combo 87 fold_scores=[0.8966, 0.9004, 0.9203, 0.9143, 0.9396]
+    combo 87 mean_macro_f1=0.9142  [45s]
+
+  combination 88({'d': 32, 'd_prime': 128, 'K': 1, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8942  (best so far: 0.8942)
+
+    >> fold 1: macro_f1=0.9296  (best so far: 0.9296)
+
+    >> fold 2: macro_f1=0.9201  (best so far: 0.9296)
+
+    >> fold 3: macro_f1=0.9155  (best so far: 0.9296)
+
+    >> fold 4: macro_f1=0.9447  (best so far: 0.9447)
+    combo 88 fold_scores=[0.8942, 0.9296, 0.9201, 0.9155, 0.9447]
+    combo 88 mean_macro_f1=0.9208  [35s]
+
+  combination 89({'d': 64, 'd_prime': 128, 'K': 3, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9194  (best so far: 0.9194)
+
+    >> fold 1: macro_f1=0.9359  (best so far: 0.9359)
+
+    >> fold 2: macro_f1=0.9291  (best so far: 0.9359)
+
+    >> fold 3: macro_f1=0.9225  (best so far: 0.9359)
+
+    >> fold 4: macro_f1=0.9503  (best so far: 0.9503)
+    combo 89 fold_scores=[0.9194, 0.9359, 0.9291, 0.9225, 0.9503]
+    combo 89 mean_macro_f1=0.9314  [45s]
+
+  combination 90({'d': 64, 'd_prime': 64, 'K': 6, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9158  (best so far: 0.9158)
+
+    >> fold 1: macro_f1=0.9137  (best so far: 0.9158)
+
+    >> fold 2: macro_f1=0.9265  (best so far: 0.9265)
+
+    >> fold 3: macro_f1=0.9192  (best so far: 0.9265)
+
+    >> fold 4: macro_f1=0.9512  (best so far: 0.9512)
+    combo 90 fold_scores=[0.9158, 0.9137, 0.9265, 0.9192, 0.9512]
+    combo 90 mean_macro_f1=0.9253  [62s]
+
+  combination 91({'d': 128, 'd_prime': 64, 'K': 6, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 400, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9108  (best so far: 0.9108)
+
+    >> fold 1: macro_f1=0.9239  (best so far: 0.9239)
+
+    >> fold 2: macro_f1=0.9215  (best so far: 0.9239)
+
+    >> fold 3: macro_f1=0.9163  (best so far: 0.9239)
+
+    >> fold 4: macro_f1=0.9369  (best so far: 0.9369)
+    combo 91 fold_scores=[0.9108, 0.9239, 0.9215, 0.9163, 0.9369]
+    combo 91 mean_macro_f1=0.9219  [79s]
+
+  combination 92({'d': 128, 'd_prime': 32, 'K': 6, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 500, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9031  (best so far: 0.9031)
+
+    >> fold 1: macro_f1=0.9201  (best so far: 0.9201)
+
+    >> fold 2: macro_f1=0.9196  (best so far: 0.9201)
+
+    >> fold 3: macro_f1=0.9185  (best so far: 0.9201)
+
+    >> fold 4: macro_f1=0.9577  (best so far: 0.9577)
+    combo 92 fold_scores=[0.9031, 0.9201, 0.9196, 0.9185, 0.9577]
+    combo 92 mean_macro_f1=0.9238  [87s]
+
+  combination 93({'d': 32, 'd_prime': 32, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.9159  (best so far: 0.9159)
+
+    >> fold 1: macro_f1=0.9267  (best so far: 0.9267)
+
+    >> fold 2: macro_f1=0.9264  (best so far: 0.9267)
+
+    >> fold 3: macro_f1=0.9251  (best so far: 0.9267)
+
+    >> fold 4: macro_f1=0.9472  (best so far: 0.9472)
+    combo 93 fold_scores=[0.9159, 0.9267, 0.9264, 0.9251, 0.9472]
+    combo 93 mean_macro_f1=0.9283  [40s]
+
+  combination 94({'d': 128, 'd_prime': 128, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.001, 'wd': 0.0001, 'epochs': 300, 'hidden': 32, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9163  (best so far: 0.9163)
+
+    >> fold 1: macro_f1=0.9236  (best so far: 0.9236)
+
+    >> fold 2: macro_f1=0.9307  (best so far: 0.9307)
+
+    >> fold 3: macro_f1=0.9252  (best so far: 0.9307)
+
+    >> fold 4: macro_f1=0.9435  (best so far: 0.9435)
+    combo 94 fold_scores=[0.9163, 0.9236, 0.9307, 0.9252, 0.9435]
+    combo 94 mean_macro_f1=0.9279  [69s]
+
+  combination 95({'d': 32, 'd_prime': 128, 'K': 4, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 1000, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9106  (best so far: 0.9106)
+
+    >> fold 1: macro_f1=0.9397  (best so far: 0.9397)
+
+    >> fold 2: macro_f1=0.9133  (best so far: 0.9397)
+
+    >> fold 3: macro_f1=0.9077  (best so far: 0.9397)
+
+    >> fold 4: macro_f1=0.9418  (best so far: 0.9418)
+    combo 95 fold_scores=[0.9106, 0.9397, 0.9133, 0.9077, 0.9418]
+    combo 95 mean_macro_f1=0.9226  [60s]
+
+  combination 96({'d': 64, 'd_prime': 128, 'K': 4, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 200, 'hidden': 32, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9158  (best so far: 0.9158)
+
+    >> fold 1: macro_f1=0.9271  (best so far: 0.9271)
+
+    >> fold 2: macro_f1=0.9314  (best so far: 0.9314)
+
+    >> fold 3: macro_f1=0.9018  (best so far: 0.9314)
+
+    >> fold 4: macro_f1=0.9431  (best so far: 0.9431)
+    combo 96 fold_scores=[0.9158, 0.9271, 0.9314, 0.9018, 0.9431]
+    combo 96 mean_macro_f1=0.9238  [43s]
+
+  combination 97({'d': 64, 'd_prime': 128, 'K': 5, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.001, 'wd': 0.0001, 'epochs': 700, 'hidden': 128, 'label_smoothing': 0.1, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9232  (best so far: 0.9232)
+
+    >> fold 1: macro_f1=0.9375  (best so far: 0.9375)
+
+    >> fold 2: macro_f1=0.9311  (best so far: 0.9375)
+
+    >> fold 3: macro_f1=0.9222  (best so far: 0.9375)
+
+    >> fold 4: macro_f1=0.9518  (best so far: 0.9518)
+    combo 97 fold_scores=[0.9232, 0.9375, 0.9311, 0.9222, 0.9518]
+    combo 97 mean_macro_f1=0.9332  [62s]
+
+  combination 98({'d': 128, 'd_prime': 32, 'K': 1, 'dropout': 0.5, 'dropout_gnn': 0.5, 'lr': 0.005, 'wd': 0.0001, 'epochs': 1000, 'hidden': 64, 'label_smoothing': 0.1, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8979  (best so far: 0.8979)
+
+    >> fold 1: macro_f1=0.9144  (best so far: 0.9144)
+
+    >> fold 2: macro_f1=0.9020  (best so far: 0.9144)
+
+    >> fold 3: macro_f1=0.9040  (best so far: 0.9144)
+
+    >> fold 4: macro_f1=0.9377  (best so far: 0.9377)
+    combo 98 fold_scores=[0.8979, 0.9144, 0.902, 0.904, 0.9377]
+    combo 98 mean_macro_f1=0.9112  [31s]
+
+  combination 99({'d': 32, 'd_prime': 64, 'K': 2, 'dropout': 0.5, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 64, 'label_smoothing': 0.0, 'warmup': 10})
+
+    >> fold 0: macro_f1=0.8924  (best so far: 0.8924)
+
+    >> fold 1: macro_f1=0.9271  (best so far: 0.9271)
+
+    >> fold 2: macro_f1=0.9227  (best so far: 0.9271)
+
+    >> fold 3: macro_f1=0.9176  (best so far: 0.9271)
+
+    >> fold 4: macro_f1=0.9394  (best so far: 0.9394)
+    combo 99 fold_scores=[0.8924, 0.9271, 0.9227, 0.9176, 0.9394]
+    combo 99 mean_macro_f1=0.9198  [36s]
+
+  combination 100({'d': 32, 'd_prime': 128, 'K': 6, 'dropout': 0.1, 'dropout_gnn': 0.1, 'lr': 0.005, 'wd': 0.0001, 'epochs': 600, 'hidden': 128, 'label_smoothing': 0.0, 'warmup': 0})
+
+    >> fold 0: macro_f1=0.9195  (best so far: 0.9195)
+
+    >> fold 1: macro_f1=0.9234  (best so far: 0.9234)
+
+    >> fold 2: macro_f1=0.9341  (best so far: 0.9341)
+
+    >> fold 3: macro_f1=0.9273  (best so far: 0.9341)
