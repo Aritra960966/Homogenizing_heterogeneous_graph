@@ -146,21 +146,29 @@ class RAHGH(nn.Module):
         # Stage 6
         self.residual = ResidualMLP(hidden_dim, output_dim, dropout)
 
+        # Propagation operator cache: rebuilt once per fold/epoch loop
+        self._prop_cache: Optional[Dict[str, torch.Tensor]] = None
+
     # ------------------------------------------------------------------
     # Stage 2 helper -- build all P_r operators (no learnable params)
-    # Called once per forward pass; for transductive settings consider
-    # pre-computing and caching outside the model.
+    # Cached after first call; call clear_propagation_cache() to reset.
     # ------------------------------------------------------------------
     def _build_operators(
         self,
         edge_index_dict: Dict[str, torch.Tensor],
     ) -> Dict[str, torch.Tensor]:
-        return {
-            r: build_propagation_operator(
-                edge_index_dict[r], self.num_nodes, directed=self.directed
-            )
-            for r in self.relation_names
-        }
+        if self._prop_cache is None:
+            self._prop_cache = {
+                r: build_propagation_operator(
+                    edge_index_dict[r], self.num_nodes, directed=self.directed
+                )
+                for r in self.relation_names
+            }
+        return self._prop_cache
+
+    def clear_propagation_cache(self) -> None:
+        """Call after switching folds / edge_index_dict to force cache rebuild."""
+        self._prop_cache = None
 
     def forward(
         self,

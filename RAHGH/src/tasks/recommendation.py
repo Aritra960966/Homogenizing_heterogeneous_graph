@@ -13,10 +13,10 @@ from ..data.lastfm_loader import rebuild_user_features
 from .link_prediction import _build_masked_edge_index
 
 
-def bpr_loss(emb, users, pos_items, neg_items, device, reg=1e-4):
-    u   = emb[torch.tensor(users,     dtype=torch.long, device=device)]
-    pos = emb[torch.tensor(pos_items, dtype=torch.long, device=device)]
-    neg = emb[torch.tensor(neg_items, dtype=torch.long, device=device)]
+def bpr_loss(emb, users, pos_items, neg_items, reg=1e-4):
+    u   = emb[users]
+    pos = emb[pos_items]
+    neg = emb[neg_items]
 
     pos_score = (u * pos).sum(dim=1)
     neg_score = (u * neg).sum(dim=1)
@@ -125,10 +125,17 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
     model = build_encoder(data, best_params, device)
     opt = Adam(model.parameters(), lr=best_params['lr'],
                weight_decay=best_params['wd'])
+    scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     all_items  = np.unique(tr80_edges[:, 1])
     user_pos   = {}
     for u, i in tr80_edges: user_pos.setdefault(u, set()).add(i)
+
+    # Pre-compute GPU tensors once (avoids per-epoch CPU→GPU transfers)
+    users_t     = torch.tensor(tr_edges[:, 0], dtype=torch.long, device=device)
+    pos_items_t = torch.tensor(tr_edges[:, 1], dtype=torch.long, device=device)
+    all_items_t = torch.tensor(all_items, dtype=torch.long, device=device)
+    num_items   = len(all_items_t)
 
     rng        = np.random.default_rng(seed)
     epoch_rows = []
@@ -141,15 +148,23 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
 
     for ep in pbar:
         model.train(); opt.zero_grad()
-        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
 
-        users     = tr_edges[:, 0]
-        pos_items = tr_edges[:, 1]
-        neg_items = sample_bpr_negatives(users, all_items, user_pos, rng)
+        with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
+            emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
+            neg_items_t = all_items_t[torch.randint(0, num_items, (len(users_t),), device=device)]
+            loss = bpr_loss(emb, users_t, pos_items_t, neg_items_t,
+                            reg=best_params.get('bpr_reg', 1e-4))
 
-        loss = bpr_loss(emb, users, pos_items, neg_items, device,
-                        reg=best_params.get('bpr_reg', 1e-4))
-        loss.backward(); opt.step()
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.unscale_(opt)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            scaler.step(opt)
+            scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            opt.step()
 
         epoch_rows.append({'epoch': ep, 'bpr_loss': round(loss.item(), 6)})
         pbar.set_postfix(loss=f"{loss.item():.4f}")

@@ -189,10 +189,16 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
 
     model = build_encoder(data, params, device)
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
+    scaler = torch.amp.GradScaler(device="cuda") if device.type == "cuda" else None
 
     all_items = np.unique(tr_edges[:, 1])
     user_pos = {}
     for u, i in tr_edges: user_pos.setdefault(u, set()).add(i)
+
+    users_t     = torch.tensor(tr_edges[:, 0], dtype=torch.long, device=device)
+    pos_items_t = torch.tensor(tr_edges[:, 1], dtype=torch.long, device=device)
+    all_items_t = torch.tensor(all_items, dtype=torch.long, device=device)
+    num_items   = len(all_items_t)
 
     best_score, best_metrics = 0.0, {}
     best_sd, stall = None, 0
@@ -203,13 +209,21 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
     for ep in pbar:
         model.train()
         opt.zero_grad()
-        emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
-        users = tr_edges[:, 0]; pos_items = tr_edges[:, 1]
-        neg_items = rng.choice(all_items, size=len(users))
-        loss = bpr_loss(emb, users, pos_items, neg_items, device,
-                        reg=params.get('bpr_reg', 1e-4))
-        loss.backward()
-        opt.step()
+        with torch.amp.autocast(device_type=device.type, enabled=scaler is not None):
+            emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
+            neg_items_t = all_items_t[torch.randint(0, num_items, (len(users_t),), device=device)]
+            loss = bpr_loss(emb, users_t, pos_items_t, neg_items_t,
+                            reg=params.get('bpr_reg', 1e-4))
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.unscale_(opt)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            scaler.step(opt)
+            scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+            opt.step()
 
         if ep % 50 == 0 or ep == max_epochs:
             model.eval()

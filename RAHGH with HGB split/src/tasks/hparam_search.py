@@ -190,28 +190,42 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
     model = build_encoder(data, params, device)
     opt = Adam(model.parameters(), lr=params['lr'], weight_decay=params['wd'])
 
+    # Pre-compute propagation operators once — cache in model for all epochs
+    homogenizer = getattr(model, 'homogenizer', model)
+    homogenizer.clear_propagation_cache()
+    homogenizer._build_operators(fold_edge_index_dict)  # populates _prop_cache
+
     all_items = np.unique(tr_edges[:, 1])
     user_pos = {}
     for u, i in tr_edges: user_pos.setdefault(u, set()).add(i)
 
+    use_amp = device.type == 'cuda'
+    scaler = torch.amp.GradScaler(device='cuda') if use_amp else None
     best_score, best_metrics = 0.0, {}
     best_sd, stall = None, 0
     rng = np.random.default_rng(0)
     max_epochs = params['epochs']
     K_ALL = [10, 20, 50]
     pbar = tqdm(range(1, max_epochs + 1), desc="    REC fold", leave=False)
+
     for ep in pbar:
         model.train()
         opt.zero_grad()
-        emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
-        users = tr_edges[:, 0]; pos_items = tr_edges[:, 1]
-        neg_items = rng.choice(all_items, size=len(users))
-        loss = bpr_loss(emb, users, pos_items, neg_items, device,
-                        reg=params.get('bpr_reg', 1e-4))
-        loss.backward()
-        opt.step()
+        with torch.amp.autocast(device_type='cuda', enabled=use_amp):
+            emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
+            users = tr_edges[:, 0]; pos_items = tr_edges[:, 1]
+            neg_items = rng.choice(all_items, size=len(users))
+            loss = bpr_loss(emb, users, pos_items, neg_items, device,
+                            reg=params.get('bpr_reg', 1e-4))
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(opt)
+            scaler.update()
+        else:
+            loss.backward()
+            opt.step()
 
-        if ep % 50 == 0 or ep == max_epochs:
+        if ep % 100 == 0 or ep == max_epochs:
             model.eval()
             with torch.no_grad():
                 emb_v, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)

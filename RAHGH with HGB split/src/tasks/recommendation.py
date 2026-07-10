@@ -80,17 +80,12 @@ def compute_rec_metrics(emb, test_edges, user_train_pos, all_items, K_list, devi
 
 def sample_bpr_negatives(users, all_items, user_pos, rng, n=None):
     n   = n or len(users)
-    neg = rng.choice(all_items, size=n*3)
-    out = []
-    ni  = 0
-    for u in users:
+    neg = rng.choice(all_items, size=n)
+    for i, u in enumerate(users):
         pos_set = user_pos.get(u, set())
-        while neg[ni] in pos_set:
-            ni += 1
-            if ni >= len(neg):
-                neg = rng.choice(all_items, size=n*3); ni = 0
-        out.append(neg[ni]); ni += 1
-    return np.array(out)
+        while neg[i] in pos_set:
+            neg[i] = rng.choice(all_items)
+    return neg
 
 
 def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
@@ -126,11 +121,18 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
     opt = Adam(model.parameters(), lr=best_params['lr'],
                weight_decay=best_params['wd'])
 
+    # Pre-compute propagation operators once
+    homogenizer = getattr(model, 'homogenizer', model)
+    homogenizer.clear_propagation_cache()
+    homogenizer._build_operators(edge_index_dict)
+
     all_items  = np.unique(tr80_edges[:, 1])
     user_pos   = {}
     for u, i in tr80_edges: user_pos.setdefault(u, set()).add(i)
 
     rng        = np.random.default_rng(seed)
+    use_amp    = device.type == 'cuda'
+    scaler     = torch.amp.GradScaler(device='cuda') if use_amp else None
     epoch_rows = []
     best_score = 0.0
     best_sd    = None
@@ -141,20 +143,24 @@ def run_final_recommendation(data, best_params, tr80_edges, te20_edges,
 
     for ep in pbar:
         model.train(); opt.zero_grad()
-        emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
-
-        users     = tr_edges[:, 0]
-        pos_items = tr_edges[:, 1]
-        neg_items = sample_bpr_negatives(users, all_items, user_pos, rng)
-
-        loss = bpr_loss(emb, users, pos_items, neg_items, device,
-                        reg=best_params.get('bpr_reg', 1e-4))
-        loss.backward(); opt.step()
+        with torch.amp.autocast(device_type='cuda', enabled=use_amp):
+            emb, *_ = model(x_dict, edge_index_dict, node_type_indices)
+            users     = tr_edges[:, 0]
+            pos_items = tr_edges[:, 1]
+            neg_items = sample_bpr_negatives(users, all_items, user_pos, rng)
+            loss = bpr_loss(emb, users, pos_items, neg_items, device,
+                            reg=best_params.get('bpr_reg', 1e-4))
+        if scaler is not None:
+            scaler.scale(loss).backward()
+            scaler.step(opt)
+            scaler.update()
+        else:
+            loss.backward(); opt.step()
 
         epoch_rows.append({'epoch': ep, 'bpr_loss': round(loss.item(), 6)})
         pbar.set_postfix(loss=f"{loss.item():.4f}")
 
-        if ep % 50 == 0 or ep == max_epochs:
+        if ep % 100 == 0 or ep == max_epochs:
             model.eval()
             with torch.no_grad():
                 emb_v, *_ = model(x_dict, edge_index_dict, node_type_indices)
