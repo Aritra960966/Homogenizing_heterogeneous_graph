@@ -386,9 +386,7 @@ class SimpleGAT(nn.Module):
         return self.conv2(Z, edge_index)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  RAHGHClassifier -- End-to-End Model (Homogenizer + Head)
-# ─────────────────────────────────────────────────────────────────────────────
+
 
 class RAHGHClassifier(nn.Module):
     """

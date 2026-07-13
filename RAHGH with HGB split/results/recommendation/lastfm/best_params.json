@@ -1,0 +1,18 @@
+{
+  "lastfm_rec": {
+    "d": 128,
+    "d_prime": 32,
+    "K": 1,
+    "dropout": 0.1,
+    "dropout_gnn": 0.1,
+    "lr": 0.005,
+    "wd": 0.0001,
+    "epochs": 700,
+    "hidden": 64,
+    "label_smoothing": 0.0,
+    "warmup": 0,
+    "K_rec": 20,
+    "neg_ratio": 10,
+    "bpr_reg": 0.001
+  }
+}
