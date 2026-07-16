@@ -27,49 +27,61 @@ def bpr_loss(emb, users, pos_items, neg_items, device, reg=1e-4):
 
 
 def compute_rec_metrics(emb, test_edges, user_train_pos, all_items, K_list, device):
-    emb_np    = emb.cpu().numpy()
+    emb = emb.to(device)
+    item_emb = emb[all_items]
+    Ni = len(all_items)
+
     user_test = {}
     for u, i in test_edges:
-        user_test.setdefault(u, []).append(i)
+        user_test.setdefault(int(u), []).append(int(i))
+
+    item_to_pos = {int(item): pos for pos, item in enumerate(all_items)}
 
     results = {K: {'recall':[], 'ndcg':[], 'hit':[], 'precision':[], 'mrr':[]}
                for K in K_list}
 
-    for user, pos_list in user_test.items():
-        u_emb    = emb_np[user]
-        item_emb = emb_np[all_items]
-        scores   = item_emb @ u_emb
+    users_list = sorted(user_test.keys())
+    n_users = len(users_list)
+    batch_size = 1024
 
-        train_pos = user_train_pos.get(user, set())
-        for idx, item in enumerate(all_items):
-            if item in train_pos:
-                scores[idx] = -1e9
+    for start in range(0, n_users, batch_size):
+        batch = users_list[start:start+batch_size]
+        batch_t = torch.tensor(batch, dtype=torch.long, device=device)
+        u_emb = emb[batch_t]
+        scores = torch.mm(u_emb, item_emb.T)
+
+        for b, user in enumerate(batch):
+            train_pos = user_train_pos.get(int(user), set())
+            if train_pos:
+                positions = [item_to_pos.get(int(it)) for it in train_pos]
+                positions = [p for p in positions if p is not None]
+                if positions:
+                    scores[b, positions] = -1e9
 
         top_K_max = max(K_list)
-        top_idx   = np.argpartition(scores, -top_K_max)[-top_K_max:]
-        top_idx   = top_idx[np.argsort(scores[top_idx])[::-1]]
-        top_items = all_items[top_idx]
+        top_scores, top_indices = torch.topk(scores, top_K_max, dim=1)
+        top_items = all_items[top_indices.cpu().numpy()]
 
-        pos_set = set(pos_list)
+        for b, user in enumerate(batch):
+            pos_list = user_test[user]
+            pos_set = set(pos_list)
+            recs = top_items[b]
 
-        for K in K_list:
-            recs     = top_items[:K]
-            hits     = [1 if i in pos_set else 0 for i in recs]
-            n_hits   = sum(hits)
+            for K in K_list:
+                hits = [1 if i in pos_set else 0 for i in recs[:K]]
+                n_hits = sum(hits)
 
-            results[K]['recall'].append(n_hits / len(pos_set) if pos_set else 0.0)
+                results[K]['recall'].append(n_hits / len(pos_set) if pos_set else 0.0)
+                dcg = sum(h / np.log2(r+2) for r, h in enumerate(hits))
+                idcg = sum(1.0 / np.log2(r+2) for r in range(min(len(pos_set), K)))
+                results[K]['ndcg'].append(dcg / idcg if idcg > 0 else 0.0)
+                results[K]['hit'].append(float(n_hits > 0))
+                results[K]['precision'].append(n_hits / K)
 
-            dcg  = sum(h / np.log2(r+2) for r, h in enumerate(hits))
-            idcg = sum(1.0 / np.log2(r+2) for r in range(min(len(pos_set), K)))
-            results[K]['ndcg'].append(dcg / idcg if idcg > 0 else 0.0)
-
-            results[K]['hit'].append(float(n_hits > 0))
-            results[K]['precision'].append(n_hits / K)
-
-            rr = 0.0
-            for r, i in enumerate(recs):
-                if i in pos_set: rr = 1.0 / (r+1); break
-            results[K]['mrr'].append(rr)
+                rr = 0.0
+                for r, i in enumerate(recs[:K]):
+                    if i in pos_set: rr = 1.0 / (r+1); break
+                results[K]['mrr'].append(rr)
 
     agg = {}
     for K in K_list:

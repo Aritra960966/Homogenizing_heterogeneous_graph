@@ -9,7 +9,7 @@ from .tasks.recommendation      import run_final_recommendation
 
 N_SEEDS  = 10
 
-TARGET_REL_IDX = {'dblp': 0, 'acm': 0, 'imdb': 2, 'lastfm': 0}
+TARGET_REL_IDX = {'dblp': 0, 'acm': 0, 'imdb': 2, 'lastfm': 0, 'yelp': 0}
 
 
 def _get_loader(dataset_name):
@@ -19,6 +19,7 @@ def _get_loader(dataset_name):
         'acm'   : lambda: __import__('src.data.acm_loader',    fromlist=['']).load_acm(),
         'imdb'  : lambda: __import__('src.data.imdb_loader',   fromlist=['']).load_imdb(),
         'lastfm': lambda: __import__('src.data.lastfm_loader', fromlist=['']).load_lastfm(),
+        'yelp'  : lambda: __import__('src.data.yelp_loader',   fromlist=['']).load_yelp(),
     }
     loader_fn = lazy.get(dataset_name)
     if loader_fn is not None:

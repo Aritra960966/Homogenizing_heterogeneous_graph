@@ -1,0 +1,18 @@
+{
+  "amazon_rec": {
+    "d": 128,
+    "d_prime": 32,
+    "K": 4,
+    "dropout": 0.5,
+    "dropout_gnn": 0.1,
+    "lr": 0.005,
+    "wd": 0.0001,
+    "epochs": 1000,
+    "hidden": 128,
+    "label_smoothing": 0.0,
+    "warmup": 10,
+    "K_rec": 50,
+    "neg_ratio": 10,
+    "bpr_reg": 0.0001
+  }
+}

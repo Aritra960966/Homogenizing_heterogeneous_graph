@@ -54,6 +54,26 @@ PARAM_GRID_REC = {
     'bpr_reg' : [1e-4, 1e-3],
 }
 
+# Fast mode: override these via env for quick experiments
+if os.environ.get('RAHGH_FAST'):
+    for key in list(PARAM_GRID_BASE.keys()):
+        if key == 'd':              PARAM_GRID_BASE[key] = [64]
+        elif key == 'd_prime':      PARAM_GRID_BASE[key] = [32]
+        elif key == 'K':            PARAM_GRID_BASE[key] = [2, 3]
+        elif key == 'lr':           PARAM_GRID_BASE[key] = [0.005]
+        elif key == 'wd':           PARAM_GRID_BASE[key] = [1e-4]
+        elif key == 'epochs':       PARAM_GRID_BASE[key] = [100]
+        elif key == 'dropout':      PARAM_GRID_BASE[key] = [0.5]
+        elif key == 'dropout_gnn':  PARAM_GRID_BASE[key] = [0.5]
+        elif key == 'hidden':       PARAM_GRID_BASE[key] = [32]
+        elif key == 'label_smoothing': PARAM_GRID_BASE[key] = [0.0]
+        elif key == 'warmup':       PARAM_GRID_BASE[key] = [0]
+    for key in list(PARAM_GRID_REC.keys()):
+        if key == 'K_rec':   PARAM_GRID_REC[key] = [20]
+        elif key == 'neg_ratio': PARAM_GRID_REC[key] = [5]
+        elif key == 'bpr_reg': PARAM_GRID_REC[key] = [1e-4]
+    N_ITER = 5
+
 N_ITER    = 100
 N_FOLDS   = 5
 TEST_FRAC = 0.20
@@ -179,7 +199,7 @@ def _run_fold_cl(data, params, tr_idx, va_idx, device, head='gcn',
 
 def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20,
                   x_dict=None, edge_index_dict=None, node_type_indices=None):
-    from .recommendation import bpr_loss, recall_at_k, compute_rec_metrics
+    from .recommendation import bpr_loss, recall_at_k, compute_rec_metrics, sample_bpr_negatives
 
     # Build inputs using only training edges to prevent leakage
     fold_x_dict = rebuild_user_features(data, tr_edges, device)
@@ -214,9 +234,19 @@ def _run_fold_rec(data, tr_edges, va_edges, params, device, head='gcn', K_rec=20
         with torch.amp.autocast(device_type='cuda', enabled=use_amp):
             emb, *_ = model(fold_x_dict, fold_edge_index_dict, fold_node_type_indices)
             users = tr_edges[:, 0]; pos_items = tr_edges[:, 1]
-            neg_items = rng.choice(all_items, size=len(users))
-            loss = bpr_loss(emb, users, pos_items, neg_items, device,
-                            reg=params.get('bpr_reg', 1e-4))
+            neg_ratio = params.get('neg_ratio', 5)
+            if neg_ratio > 1:
+                users_rep = np.repeat(users, neg_ratio)
+                pos_rep = np.repeat(pos_items, neg_ratio)
+                neg_batches = [sample_bpr_negatives(users, all_items, user_pos, rng)
+                              for _ in range(neg_ratio)]
+                neg_items = np.concatenate(neg_batches)
+                loss = bpr_loss(emb, users_rep, pos_rep, neg_items, device,
+                                reg=params.get('bpr_reg', 1e-4))
+            else:
+                neg_items = sample_bpr_negatives(users, all_items, user_pos, rng)
+                loss = bpr_loss(emb, users, pos_items, neg_items, device,
+                                reg=params.get('bpr_reg', 1e-4))
         if scaler is not None:
             scaler.scale(loss).backward()
             scaler.step(opt)
